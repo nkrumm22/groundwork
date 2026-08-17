@@ -99,6 +99,24 @@ phase.
 | Colors, light/dark | the `:root` token blocks at the top of the `<style>` |
 | The icon | `make_icons.py`, then re-run `python make_icons.py` |
 
+### Timers
+
+Starting a session starts a **session clock** in the header, which runs until
+you finish and becomes the duration that gets logged. The app also asks the
+phone to keep the screen awake for the session, so it doesn't sleep mid-set.
+
+On strength days, completing a set starts a **60-second rest countdown** with
+`+30s` and `Skip rest`. It ends with a tone and a buzz, and doesn't appear
+after the final set — the session is over at that point. Change `REST_SEC` to
+adjust the default.
+
+On cardio days the interval timer handles the jog/walk switches, beeping and
+buzzing at each change. Plank-style holds get their own countdown.
+
+The session clock and rest timer work off wall-clock timestamps rather than
+counting down a variable, so a locked screen or a backgrounded tab can't make
+them drift.
+
 ### Movement demonstrations
 
 Tap any exercise — in the Today card, in a week's detail, or via **Show me

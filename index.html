@@ -365,6 +365,31 @@ textarea.in { min-height: 74px; resize: vertical; }
 .setbtn.done { background: var(--series); color: #fff; border-color: transparent; }
 .setbtn.done .sl { color: rgba(255,255,255,.75); }
 
+/* ── Session clock & rest timer ─────────────────────────────────────── */
+.run-clock { display: flex; align-items: center; gap: 7px;
+             font-size: 15px; font-weight: 600; color: var(--ink);
+             font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.run-clock i { width: 7px; height: 7px; border-radius: 50%; background: var(--series);
+               animation: beat 2s ease-in-out infinite; }
+@keyframes beat { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+@media (prefers-reduced-motion: reduce) { .run-clock i { animation: none; } }
+
+.rest { background: var(--series-soft); border-radius: 15px;
+        padding: 15px 16px; margin-bottom: 22px; }
+.rest-top { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 11px; }
+.rest-top span { font-size: 13.5px; font-weight: 600; color: var(--series);
+                 letter-spacing: .03em; text-transform: uppercase; }
+.rest-top b { font-size: 27px; font-weight: 650; color: var(--ink);
+              font-variant-numeric: tabular-nums; letter-spacing: -.025em; }
+.rest-track { height: 4px; border-radius: 2px; background: var(--grid);
+              overflow: hidden; margin-bottom: 13px; }
+.rest-track i { display: block; height: 100%; border-radius: 2px;
+                background: var(--series); transition: width .95s linear; }
+.rest-btns { display: flex; gap: 8px; }
+.rest-btns button { flex: 1; padding: 10px; border-radius: 11px;
+                    font-size: 13.5px; font-weight: 550; color: var(--ink-2);
+                    background: var(--surface); border: 1px solid var(--border); }
+
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
            overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 </style>
@@ -839,23 +864,98 @@ function restartPlan() {
 let R = null;          // active run state
 let tick = null;       // interval handle
 
+const REST_SEC = 60;   // rest between sets — plenty for bodyweight work
+let sessTick = null;   // 1s heartbeat that runs for the whole session
+
 function startRunner(week, dayIdx) {
   const s = session(week, dayIdx);
   R = { s, i: 0, done: {}, startedAt: Date.now(),
-        timer: null, running: false };
+        timer: null, running: false, rest: null };
   if (s.type === "cardio") R.timer = buildCardioTimer(s.cardio);
   $("#runner").classList.add("on");
   document.body.style.overflow = "hidden";
+  sessTick = setInterval(runnerSecond, 1000);
+  keepAwake();
   drawRunner();
+}
+
+/* One place to tear everything down, so no interval outlives the session. */
+function endRunner() {
+  stopTick();
+  if (sessTick) { clearInterval(sessTick); sessTick = null; }
+  if (holdT) { clearInterval(holdT.h); holdT = null; }
+  releaseWake();
+  R = null;
+  $("#runner").classList.remove("on");
+  document.body.style.overflow = "";
 }
 
 function closeRunner(skipConfirm) {
   if (!skipConfirm && !confirm("Leave this session? Nothing will be logged.")) return;
-  stopTick();
-  R = null;
-  $("#runner").classList.remove("on");
-  document.body.style.overflow = "";
+  endRunner();
   render();
+}
+
+/* ── Session clock & rest between sets ──────────────────────────────────
+   Both work off timestamps rather than counting down a variable, so a
+   locked screen or a backgrounded tab can't make them drift.            */
+
+function elapsedSec() { return R ? Math.floor((Date.now() - R.startedAt) / 1000) : 0; }
+function restLeft()   { return R && R.rest ? Math.max(0, Math.round((R.rest.endsAt - Date.now()) / 1000)) : 0; }
+
+function hms(sec) {
+  const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
+  return h ? `${h}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`
+           : `${m}:${String(s).padStart(2,"0")}`;
+}
+
+function runnerSecond() {
+  if (!R) return;
+  const c = document.getElementById("sessElapsed");
+  if (c) c.textContent = hms(elapsedSec());
+
+  if (R.rest) {
+    const left = restLeft();
+    if (left <= 0) {
+      R.rest = null;
+      beep(760, .3);
+      if (navigator.vibrate) navigator.vibrate([130, 70, 130]);
+      drawRunner();
+    } else {
+      const t = document.getElementById("restLeft");
+      const b = document.getElementById("restBar");
+      if (t) t.textContent = clock(left);
+      if (b) b.style.width = (100 * (1 - left / R.rest.total)).toFixed(1) + "%";
+    }
+  }
+}
+
+function startRest() {
+  const s = R.s, m = s.moves[R.i];
+  const lastMove = R.i === s.moves.length - 1;
+  const setsDone = R.done[R.i] || 0;
+  // No point resting after the very last set — the session is over.
+  if (lastMove && setsDone >= m.sets) { R.rest = null; return; }
+  R.rest = { endsAt: Date.now() + REST_SEC * 1000, total: REST_SEC };
+}
+
+function skipRest() { R.rest = null; drawRunner(); }
+function addRest(sec) {
+  if (!R.rest) return;
+  R.rest.endsAt += sec * 1000;
+  R.rest.total += sec;
+  drawRunner();
+}
+
+/* Keep the screen on for the session — otherwise the phone sleeps mid-set
+   and the timers stop being visible. */
+let wake = null;
+async function keepAwake() {
+  if (!("wakeLock" in navigator)) return;
+  try { wake = await navigator.wakeLock.request("screen"); } catch (e) { /* denied or unsupported */ }
+}
+function releaseWake() {
+  if (wake) { try { wake.release(); } catch (e) {} wake = null; }
 }
 
 /* Flatten interval work into a simple queue of phases. */
@@ -879,6 +979,7 @@ function drawRunner() {
   const s = R.s;
   let html = `<div class="run-top">
       <button class="x" onclick="closeRunner()">✕ Close</button>
+      <span class="run-clock"><i></i><span id="sessElapsed">${hms(elapsedSec())}</span></span>
       <span class="run-step">Week ${s.week} · Day ${s.dayIdx + 1}</span>
     </div>`;
 
@@ -902,6 +1003,19 @@ function drawRunner() {
            <span class="sl">Set ${i+1}</span>${m.hold ? m.reps + "s" : m.reps}
          </button>`).join("") + `</div>`;
 
+    if (R.rest) {
+      const left = restLeft();
+      html += `<div class="rest">
+        <div class="rest-top"><span>Rest</span><b id="restLeft">${clock(left)}</b></div>
+        <div class="rest-track"><i id="restBar"
+          style="width:${(100 * (1 - left / R.rest.total)).toFixed(1)}%"></i></div>
+        <div class="rest-btns">
+          <button onclick="addRest(30)">+30s</button>
+          <button onclick="skipRest()">Skip rest</button>
+        </div>
+      </div>`;
+    }
+
     html += `<div class="btn-row">`;
     if (R.i > 0) html += `<button class="btn ghost" onclick="moveStep(-1)">Back</button>`;
     html += R.i < s.moves.length - 1
@@ -918,8 +1032,7 @@ function drawRunner() {
         ${ringSVG(frac, ph.kind)}
         <div class="clock">${clock(t.left)}</div>
         <div class="phase-l" style="color:${ph.kind === "work" ? "var(--series)" : "var(--ink-2)"}">${ph.label}</div>
-        <div class="rounds">${ph.round ? `Round ${ph.round} of ${ph.of} · ` : ""}${
-          clock(t.elapsed)} elapsed</div>
+        ${ph.round ? `<div class="rounds">Round ${ph.round} of ${ph.of}</div>` : ""}
       </div>
       <div class="btn-row" style="margin-bottom:8px">
         <button class="btn ${R.running ? "ghost" : ""}" onclick="toggleTick()">${R.running ? "Pause" : (t.elapsed ? "Resume" : "Start")}</button>
@@ -969,12 +1082,15 @@ function ringSVG(frac, kind) {
 
 function toggleSet(i) {
   const cur = R.done[R.i] || 0;
-  R.done[R.i] = (i + 1 === cur) ? i : i + 1;   // tap the last done set to undo it
+  const marking = (i + 1 !== cur);
+  R.done[R.i] = marking ? i + 1 : i;           // tap the last done set to undo it
   if (navigator.vibrate) navigator.vibrate(8);
+  if (marking) startRest(); else R.rest = null;
   drawRunner();
 }
 function moveStep(d) {
   if (holdT) { clearInterval(holdT.h); holdT = null; }
+  R.rest = null;                               // a new move starts fresh
   R.i = Math.max(0, Math.min(R.s.moves.length - 1, R.i + d));
   window.scrollTo(0, 0);
   drawRunner();
@@ -1046,10 +1162,7 @@ function finishRun() {
   S.workouts.push(w);
   S.habits[today()] = Object.assign({}, S.habits[today()], { moved: true });
   save();
-  stopTick(); if (holdT) { clearInterval(holdT.h); holdT = null; }
-  R = null;
-  $("#runner").classList.remove("on");
-  document.body.style.overflow = "";
+  endRunner();
 
   const wk = currentWeek();
   celebrate(s, wk);
@@ -2022,12 +2135,10 @@ if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
     navigator.serviceWorker.register("sw.js").catch(() => {}));
 }
 
-// Keep the screen awake during a session, where supported.
-let wake = null;
-document.addEventListener("visibilitychange", async () => {
-  if (document.visibilityState === "visible" && R && "wakeLock" in navigator) {
-    try { wake = await navigator.wakeLock.request("screen"); } catch (e) {}
-  }
+// A screen wake lock is dropped whenever the page is hidden, so take it
+// again on the way back if a session is still running.
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && R) keepAwake();
 });
 
 render();
