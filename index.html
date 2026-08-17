@@ -217,6 +217,73 @@ h2 { font-size: 13px; font-weight: 600; letter-spacing: .04em; text-transform: u
 .habit.on { background: var(--series-soft); border-color: transparent; color: var(--ink); }
 .habit.on .dot { background: var(--series); border-color: var(--series); color: #fff; }
 
+/* ── Food ───────────────────────────────────────────────────────────── */
+.fm { background: var(--surface); border: 1px solid var(--border);
+      border-radius: 15px; padding: 15px 16px; margin-bottom: 10px; }
+.fm.done { border-color: color-mix(in srgb, var(--series) 40%, transparent); }
+.fm-top { display: flex; align-items: center; gap: 11px; }
+.fm-ic { width: 31px; height: 31px; flex: none; border-radius: 9px;
+         background: var(--series-soft); display: flex; align-items: center; justify-content: center; }
+.fm-ic svg { width: 18px; height: 18px; fill: none; stroke: var(--series);
+             stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.fm-name { flex: 1; font-size: 15.5px; font-weight: 560; letter-spacing: -.01em; }
+.fm-val { font-size: 15px; font-weight: 620; font-variant-numeric: tabular-nums; }
+.fm-val i { font-size: 12.5px; font-weight: 450; color: var(--muted); font-style: normal; }
+.fm-hint { font-size: 12.5px; color: var(--muted); line-height: 1.45; margin: 0; }
+
+.pips { display: flex; gap: 6px; margin: 13px 0 10px; }
+.pip { flex: 1; min-width: 0; height: 34px; border-radius: 8px;
+       border: 1px solid var(--border); background: var(--plane);
+       transition: background .12s ease, border-color .12s ease; }
+.pip.on { background: var(--series); border-color: transparent; }
+.pip.neutral.on { background: var(--axis); }
+.pip-plus { width: 34px; height: 34px; flex: none; border-radius: 8px;
+            border: 1px dashed var(--axis); color: var(--muted);
+            font-size: 17px; line-height: 1; background: transparent; }
+.pip-over { align-self: center; font-size: 13px; font-weight: 600;
+            color: var(--series); font-variant-numeric: tabular-nums; }
+
+/* Week strip */
+.wstrip { display: flex; gap: 6px; height: 92px; }
+.ws { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 7px; }
+.ws-bar { flex: 1; width: 100%; background: var(--grid); border-radius: 6px;
+          display: flex; align-items: flex-end; overflow: hidden; }
+.ws-bar i { display: block; width: 100%; background: var(--seq-2); border-radius: 6px; }
+.ws span { font-size: 11px; color: var(--muted); }
+.ws.today span { color: var(--series); font-weight: 700; }
+
+/* Target steppers */
+.goal-row { display: flex; align-items: center; justify-content: space-between;
+            padding: 9px 0; border-bottom: 1px solid var(--grid); font-size: 15px; }
+.goal-row:last-child { border-bottom: 0; }
+.goal-set { display: flex; align-items: center; gap: 10px; }
+.goal-set button { width: 32px; height: 32px; border-radius: 9px;
+                   border: 1px solid var(--border); background: var(--plane);
+                   font-size: 17px; line-height: 1; color: var(--ink-2); }
+.goal-set b { min-width: 22px; text-align: center; font-variant-numeric: tabular-nums; }
+
+/* The glance on Today */
+.food-peek { display: block; width: 100%; text-align: left; padding: 16px; }
+.fp-rows { display: grid; gap: 11px; }
+.fp { display: grid; grid-template-columns: 1fr auto; gap: 3px 8px; align-items: baseline; }
+.fp-l { grid-column: 1; grid-row: 1; font-size: 14px; }
+.fp-v { grid-column: 2; grid-row: 1; font-size: 13px; color: var(--muted);
+        font-variant-numeric: tabular-nums; }
+.fp-track { grid-column: 1 / -1; grid-row: 2; height: 4px; border-radius: 2px;
+            background: var(--grid); overflow: hidden; }
+.fp-track i { display: block; height: 100%; background: var(--series); border-radius: 2px; }
+.fp-go { display: block; margin-top: 15px; font-size: 13.5px;
+         font-weight: 550; color: var(--series); }
+
+/* Small multiples on Progress */
+.fc { margin-bottom: 17px; }
+.fc:last-of-type { margin-bottom: 4px; }
+.fc-h { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 5px; }
+.fc-h span { font-size: 13.5px; font-weight: 550; }
+.fc-h b { font-size: 15px; font-variant-numeric: tabular-nums; }
+.fc-h b i { font-size: 12px; font-weight: 450; color: var(--muted); font-style: normal; }
+.fc svg { display: block; width: 100%; height: auto; }
+
 /* ── Bottom tab bar ─────────────────────────────────────────────────────── */
 #tabs {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
@@ -410,6 +477,13 @@ textarea.in { min-height: 74px; resize: vertical; }
     <div id="todayBody"></div>
   </section>
 
+  <!-- ══ FOOD ═══════════════════════════════════════════════════════════ -->
+  <section class="screen" id="s-food">
+    <h1>Food</h1>
+    <p class="sub" id="foodDate"></p>
+    <div id="foodBody"></div>
+  </section>
+
   <!-- ══ LOG ════════════════════════════════════════════════════════════ -->
   <section class="screen" id="s-log">
     <h1>Log</h1>
@@ -461,6 +535,10 @@ textarea.in { min-height: 74px; resize: vertical; }
   <button class="tab on" data-go="today">
     <svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
     Today
+  </button>
+  <button class="tab" data-go="food">
+    <svg viewBox="0 0 24 24"><path d="M12 8c-3.2 0-5 2.7-5 6.2S9.4 21.5 12 21.5s5-3.8 5-7.3S15.2 8 12 8z"/><path d="M12 8c0-2.6 1.9-4.5 4.4-4.5C16.4 6.1 14.6 8 12 8z"/></svg>
+    Food
   </button>
   <button class="tab" data-go="log">
     <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
@@ -634,6 +712,8 @@ const blank = () => ({
   workouts: [],      // {id, date, type, title, planWeek, planDay, duration, distance, moves[], note}
   weights: [],       // {id, date, kg}
   habits: {},        // 'YYYY-MM-DD': {moved:bool, ate:bool, slept:bool}
+  food: {},          // 'YYYY-MM-DD': {veg, protein, water, cooked, out}
+  foodGoals: {},     // per-metric overrides of the FOOD defaults
 });
 
 let S = load();
@@ -751,6 +831,7 @@ function go(name) {
 
 function render() {
   if (screen === "today")    renderToday();
+  if (screen === "food")     renderFood();
   if (screen === "log")      renderHistory();
   if (screen === "progress") renderProgress();
   if (screen === "plan")     renderPlan();
@@ -827,12 +908,28 @@ function renderToday() {
     html += `</div>`;
   }
 
-  // Habits
+  // Habits. Eating used to be a yes/no here; the Food tab measures it
+  // properly now, so a vague "Ate well" toggle would just contradict it.
   html += `<h2>Today's basics</h2><div class="habits">
-    ${habitBtn("moved", "Moved", hab.moved)}
-    ${habitBtn("ate",   "Ate well", hab.ate)}
-    ${habitBtn("slept", "Slept 7h+", hab.slept)}
+    ${HABITS.map(h => habitBtn(h.k, h.label, hab[h.k])).join("")}
   </div>`;
+
+  // Food — a glance and a way in; the tapping happens on the Food tab.
+  const met = goalsMet(today());
+  html += `<h2>Food</h2>
+    <button class="card food-peek" onclick="go('food')">
+      <div class="fp-rows">
+        ${FOOD_GOALS.map(f => {
+          const v = foodVal(today(), f.k), g = foodGoal(f.k);
+          return `<div class="fp">
+            <div class="fp-track"><i style="width:${Math.min(100, v/g*100)}%"></i></div>
+            <span class="fp-l">${esc(f.label)}</span>
+            <span class="fp-v">${v}/${g}</span>
+          </div>`;
+        }).join("")}
+      </div>
+      <span class="fp-go">${met === FOOD_GOALS.length ? "All four hit today" : "Tap to log"} ›</span>
+    </button>`;
 
   // What you already did today
   if (didToday.length) {
@@ -842,6 +939,11 @@ function renderToday() {
 
   $("#todayBody").innerHTML = html;
 }
+
+const HABITS = [
+  { k: "moved", label: "Moved" },
+  { k: "slept", label: "Slept 7h+" },
+];
 
 const habitBtn = (k, label, on) =>
   `<button class="habit${on ? " on" : ""}" onclick="toggleHabit('${k}')" aria-pressed="${!!on}">
@@ -1693,6 +1795,167 @@ function showDemo(figId, name, cue, back) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
+   7c. FOOD
+
+   Habit tracking, not calorie counting — four things that reliably move
+   the needle, tallied by tapping. There is deliberately no calorie total,
+   no daily "budget" and no score for the day: those turn eating into
+   arithmetic, and the evidence that people stick with them is poor.
+
+   "Meals out" is counted but never marked as a failure. It exists so a
+   pattern is visible, not so there's something to feel bad about.
+   ══════════════════════════════════════════════════════════════════════ */
+
+const FOOD = [
+  { k:"veg", label:"Vegetables", unit:"servings", goal:5,
+    hint:"Roughly a cupped handful each. Frozen and tinned count.",
+    icon:`<path d="M4 20c0-8 6-14 16-14 0 10-6 15-16 14z"/><path d="M4 20c3-5 7-8 11-9.5"/>` },
+  { k:"protein", label:"Protein", unit:"servings", goal:3,
+    hint:"A palm-sized portion — eggs, fish, meat, beans, yoghurt. This is what lets the training build something.",
+    icon:`<path d="M8 12c1.9-3.3 4.7-5 7.6-5s5.2 1.7 5.9 5c-.7 3.3-3 5-5.9 5S9.9 15.3 8 12z"/><path d="M8 12 3.6 8.4v7.2z"/><path d="M17.4 10.6h.01"/>` },
+  { k:"water", label:"Water", unit:"glasses", goal:8,
+    hint:"Tea and coffee count toward it.",
+    icon:`<path d="M12 3.5s6.5 7 6.5 10.5a6.5 6.5 0 0 1-13 0C5.5 10.5 12 3.5 12 3.5z"/>` },
+  { k:"cooked", label:"Home-cooked", unit:"meals", goal:2,
+    hint:"Anything you made yourself, however simple.",
+    icon:`<path d="M3 12.5h13.5V16a4 4 0 0 1-4 4h-5.5a4 4 0 0 1-4-4z"/><path d="M16.5 15h4.5"/>` },
+  { k:"out", label:"Meals out", unit:"meals", goal:2, neutral:true,
+    hint:"Counted, not judged — it's here so you can see the pattern, nothing more.",
+    icon:`<path d="M6 8.5h12L17 20H7z"/><path d="M9.5 8.5V6a2.5 2.5 0 0 1 5 0v2.5"/>` },
+];
+
+/* The four you're actually aiming at — "meals out" is observation only. */
+const FOOD_GOALS = FOOD.filter(f => !f.neutral);
+
+const foodGoal = k => S.foodGoals[k] || FOOD.find(f => f.k === k).goal;
+const foodDay  = d => S.food[d] || {};
+const foodVal  = (d, k) => foodDay(d)[k] || 0;
+
+/* How many of the four targets a day met. Used for the week strip and the
+   trend chart — never shown as a score out of ten or a percentage. */
+function goalsMet(d) {
+  return FOOD_GOALS.filter(f => foodVal(d, f.k) >= foodGoal(f.k)).length;
+}
+const anyFoodLogged = d => FOOD.some(f => foodVal(d, f.k) > 0);
+
+function setFood(k, n) {
+  const d = today();
+  S.food[d] = S.food[d] || {};
+  const cur = S.food[d][k] || 0;
+  S.food[d][k] = (cur === n) ? n - 1 : n;    // tap the last filled pip to undo
+  if (navigator.vibrate) navigator.vibrate(8);
+  save(); renderFood();
+}
+function bumpFood(k, delta) {
+  const d = today();
+  S.food[d] = S.food[d] || {};
+  S.food[d][k] = Math.max(0, Math.min(99, (S.food[d][k] || 0) + delta));
+  if (navigator.vibrate) navigator.vibrate(8);
+  save(); renderFood();
+}
+
+/* ── The Food screen ────────────────────────────────────────────────── */
+
+function renderFood() {
+  $("#foodDate").textContent =
+    new Date().toLocaleDateString(undefined, { weekday:"long", month:"long", day:"numeric" });
+
+  const d = today();
+  const met = goalsMet(d);
+  let html = "";
+
+  // A single honest line about the day, with no score attached. Note that
+  // "nothing met yet" is not the same as "nothing logged" — saying the
+  // wrong one to someone who has been logging all day is just insulting.
+  const logged = anyFoodLogged(d);
+  const line = !logged ? "Nothing logged yet today."
+    : met === 0 ? "Logged so far, nothing hit yet. Plenty of day left."
+    : met === FOOD_GOALS.length ? "All four hit today. That's a good day of eating."
+    : met === 1 ? "One down. They count on their own, not as a set."
+    : `${met} of ${FOOD_GOALS.length} so far.`;
+  html += `<div class="card flat" style="border:1px solid var(--border);margin-bottom:14px">
+    <p class="card-meta" style="margin-bottom:6px">Today</p>
+    <p style="font-size:16px;margin:0;font-weight:550">${esc(line)}</p>
+  </div>`;
+
+  html += FOOD.map(f => foodRowHTML(f, d)).join("");
+
+  // Last seven days, so a bad day reads as one day rather than a verdict.
+  html += `<h2>This week</h2><div class="card">${weekStripHTML()}</div>`;
+
+  html += `<h2>Targets</h2><div class="card">
+    <p class="card-meta" style="margin-bottom:14px">
+      Sensible defaults, not medical advice. Change them to whatever you'll actually hit.</p>
+    ${FOOD_GOALS.map(f => `
+      <label class="goal-row">
+        <span>${esc(f.label)}</span>
+        <span class="goal-set">
+          <button onclick="setGoal('${f.k}',-1)" aria-label="Lower">−</button>
+          <b>${foodGoal(f.k)}</b>
+          <button onclick="setGoal('${f.k}',1)" aria-label="Raise">+</button>
+        </span>
+      </label>`).join("")}
+  </div>`;
+
+  $("#foodBody").innerHTML = html;
+}
+
+function setGoal(k, delta) {
+  const cur = foodGoal(k);
+  S.foodGoals[k] = Math.max(1, Math.min(20, cur + delta));
+  save(); renderFood();
+}
+
+function foodRowHTML(f, d) {
+  const val = foodVal(d, f.k), goal = foodGoal(f.k);
+  const done = !f.neutral && val >= goal;
+  const pips = Array.from({ length: goal }, (_, i) =>
+    `<button class="pip${i < val ? " on" : ""}${f.neutral ? " neutral" : ""}"
+       onclick="setFood('${f.k}',${i+1})"
+       aria-label="${esc(f.label)} ${i+1} of ${goal}"></button>`).join("");
+
+  return `<div class="fm${done ? " done" : ""}">
+    <div class="fm-top">
+      <span class="fm-ic"><svg viewBox="0 0 24 24">${f.icon}</svg></span>
+      <span class="fm-name">${esc(f.label)}</span>
+      <span class="fm-val">${val}<i> ${f.neutral ? esc(f.unit)
+        : `/ ${goal} ${esc(f.unit)}`}</i></span>
+    </div>
+    <div class="pips">${pips}
+      <button class="pip-plus" onclick="bumpFood('${f.k}',1)" aria-label="Add one more">+</button>
+      ${val > goal ? `<span class="pip-over">+${val - goal}</span>` : ""}
+    </div>
+    <p class="fm-hint">${esc(f.hint)}</p>
+  </div>`;
+}
+
+/* Seven days of "how many targets did that day meet", Monday first. */
+function weekStripHTML() {
+  const now = new Date();
+  const monday = addDays(now, -((now.getDay() + 6) % 7));
+  const t = today();
+  const cells = Array.from({ length: 7 }, (_, i) => {
+    const day = addDays(monday, i), ds = iso(day);
+    const future = ds > t;
+    const met = future ? 0 : goalsMet(ds);
+    const logged = !future && anyFoodLogged(ds);
+    // An unlogged day draws nothing at all; a logged day that hit none of
+    // its targets still draws a stub, so the two never look alike.
+    const h = met / FOOD_GOALS.length;
+    const bar = (future || !logged) ? ""
+      : `<i style="height:${Math.max(11, h * 100)}%;background:${
+          met === FOOD_GOALS.length ? "var(--series)" : met ? "var(--seq-2)" : "var(--seq-1)"}"></i>`;
+    return `<div class="ws${ds === t ? " today" : ""}">
+      <div class="ws-bar">${bar}</div>
+      <span>${["M","T","W","T","F","S","S"][i]}</span>
+    </div>`;
+  }).join("");
+  return `<div class="wstrip">${cells}</div>
+    <p class="card-meta" style="margin-top:12px">
+      Bar height is how many of the four you hit that day.</p>`;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
    8. FREE LOGGING
    ══════════════════════════════════════════════════════════════════════ */
 
@@ -1870,7 +2133,8 @@ function renderProgress() {
   const w = S.workouts;
   let html = "";
 
-  if (!w.length && !S.weights.length) {
+  const anyFood = Object.keys(S.food).some(anyFoodLogged);
+  if (!w.length && !S.weights.length && !anyFood) {
     $("#progressBody").innerHTML =
       `<p class="empty">No data yet.<br>Finish a session and this fills in.</p>`;
     return;
@@ -1878,7 +2142,7 @@ function renderProgress() {
 
   // Hero — total minutes moved
   const mins = totalMinutes();
-  html += `<div class="card">
+  if (w.length) html += `<div class="card">
     <p class="card-meta">Total time moving</p>
     <div class="hero">${mins >= 600 ? (mins/60).toFixed(1) : mins}<span class="hero-unit">${
       mins >= 600 ? "hours" : "minutes"}</span></div>
@@ -1911,13 +2175,17 @@ function renderProgress() {
     if (best > 0) {
       const firstDay = S.workouts.map(x => x.date).sort()[0];
       const wks = Math.max(1, Math.round(daysBetween(firstDay, today()) / 7));
+      const bv = best >= 60 ? Math.round(best / 60) : best;
+      const bu = (best >= 60 ? "minute" : "second") + (bv === 1 ? "" : "s");
       html += `<h2>Longest unbroken jog</h2><div class="card">
-        <div class="hero">${best >= 60 ? Math.round(best/60) : best}<span class="hero-unit">${
-          best >= 60 ? "minutes" : "seconds"}</span></div>
+        <div class="hero">${bv}<span class="hero-unit">${bu}</span></div>
         <p class="card-meta" style="margin-top:8px">Up from nothing ${wks} week${
           wks === 1 ? "" : "s"} ago.</p></div>`;
     }
   }
+
+  const fc = foodChartsHTML();
+  if (fc) html += `<h2>Eating</h2><div class="card">${fc}</div>`;
 
   $("#progressBody").innerHTML = html;
   wireCharts();
@@ -1938,7 +2206,7 @@ function heatmapHTML() {
     const d = iso(addDays(start, i));
     const outs = S.workouts.filter(x => x.date === d);
     const hab  = S.habits[d] || {};
-    const habN = ["moved","ate","slept"].filter(k => hab[k]).length;
+    const habN = HABITS.filter(h => hab[h.k]).length;
     let lvl = 0;
     if (outs.length >= 2) lvl = 3;
     else if (outs.length === 1) lvl = 2;
@@ -1965,7 +2233,7 @@ function heatmapHTML() {
     <div id="heatTbl" hidden>
       <table class="data"><thead><tr><th>Date</th><th class="num">Sessions</th><th class="num">Basics</th></tr></thead>
       <tbody>${rows.slice(-30).reverse().map(r =>
-        `<tr><td>${fmtDate(r.d)}</td><td class="num">${r.n}</td><td class="num">${r.habN}/3</td></tr>`
+        `<tr><td>${fmtDate(r.d)}</td><td class="num">${r.n}</td><td class="num">${r.habN}/${HABITS.length}</td></tr>`
       ).join("")}</tbody></table>
     </div>`;
 }
@@ -2109,6 +2377,68 @@ function weeklyChartHTML() {
     </div>`;
 }
 
+/* ── Food: small multiples, one metric each ──────────────────────────────
+   Four separate measures on one axis would be a lie, so they get four
+   charts. The faint rule on each is that metric's target.            */
+function foodChartsHTML() {
+  const days = 14;
+  const start = addDays(new Date(), -(days - 1));
+  const dates = Array.from({ length: days }, (_, i) => iso(addDays(start, i)));
+  const loggedDates = dates.filter(anyFoodLogged);
+  if (!loggedDates.length) return "";
+
+  const charts = FOOD_GOALS.map(f => {
+    const goal = foodGoal(f.k);
+    const vals = dates.map(d => foodVal(d, f.k));
+    const max = Math.max(goal, ...vals);
+    const W = 210, H = 54, PT = 6, base = H - 2;
+    const band = W / days, bw = Math.min(11, band - 3);
+
+    const bars = vals.map((v, i) => {
+      if (!v) return "";
+      const x = i * band + (band - bw) / 2;
+      const h = Math.max(2.5, (v / max) * (base - PT));
+      const r = Math.min(3, h);
+      return `<path d="M${x.toFixed(1)} ${base} L${x.toFixed(1)} ${(base-h+r).toFixed(1)}
+        Q${x.toFixed(1)} ${(base-h).toFixed(1)} ${(x+r).toFixed(1)} ${(base-h).toFixed(1)}
+        L${(x+bw-r).toFixed(1)} ${(base-h).toFixed(1)}
+        Q${(x+bw).toFixed(1)} ${(base-h).toFixed(1)} ${(x+bw).toFixed(1)} ${(base-h+r).toFixed(1)}
+        L${(x+bw).toFixed(1)} ${base} Z" fill="var(--series)"/>`;
+    }).join("");
+
+    const gy = base - (goal / max) * (base - PT);
+    const total = vals.reduce((a, b) => a + b, 0);
+    const avg = total / loggedDates.length;
+
+    return `<div class="fc">
+      <div class="fc-h"><span>${esc(f.label)}</span><b>${avg.toFixed(1)}<i> a day</i></b></div>
+      <svg viewBox="0 0 ${W} ${H}" role="img"
+        aria-label="${esc(f.label)}: ${avg.toFixed(1)} a day on average, target ${goal}">
+        <line x1="0" x2="${W}" y1="${gy.toFixed(1)}" y2="${gy.toFixed(1)}"
+          stroke="var(--axis)" stroke-width="1"/>
+        ${bars}
+      </svg>
+    </div>`;
+  }).join("");
+
+  const perfect = loggedDates.filter(d => goalsMet(d) === FOOD_GOALS.length).length;
+
+  return `<p class="card-meta" style="margin-bottom:14px">
+      Last ${days} days · ${loggedDates.length} logged${
+      perfect ? ` · all four hit on ${perfect}` : ""}. The line on each is your target.</p>
+    ${charts}
+    ${tableToggle("foodTbl")}
+    <div id="foodTbl" hidden>
+      <table class="data"><thead><tr><th>Date</th>${
+        FOOD.map(f => `<th class="num">${esc(f.label.slice(0,4))}</th>`).join("")
+      }</tr></thead><tbody>${
+        loggedDates.slice().reverse().map(d =>
+          `<tr><td>${fmtDate(d)}</td>${
+            FOOD.map(f => `<td class="num">${foodVal(d, f.k)}</td>`).join("")}</tr>`).join("")
+      }</tbody></table>
+    </div>`;
+}
+
 const tableToggle = id =>
   `<button class="toggle-table" onclick="toggleTable('${id}', this)"
      aria-expanded="false" aria-controls="${id}">Show data table</button>`;
@@ -2132,7 +2462,7 @@ function wireCharts() {
         const n = +cell.dataset.n, m = +cell.dataset.m, h = +cell.dataset.h;
         hTip.innerHTML = `<b>${fmtDate(cell.dataset.d)}</b><br>` +
           (n ? `${n} session${n>1?"s":""}${m ? ` · ${m} min` : ""}` : "Rest day") +
-          `<span class="d"><br>${h}/3 basics</span>`;
+          `<span class="d"><br>${h}/${HABITS.length} basics</span>`;
         const r = cell.getBoundingClientRect(), p = heat.parentElement.getBoundingClientRect();
         hTip.style.left = Math.max(0, Math.min(p.width - 130, r.left - p.left - 55)) + "px";
         hTip.style.top  = (r.top - p.top - 62) + "px";

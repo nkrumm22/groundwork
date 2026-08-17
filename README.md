@@ -67,6 +67,34 @@ and there is no account. Two consequences:
 
 ---
 
+## Food
+
+The **Food** tab tracks four things by tapping — vegetables, protein, water,
+home-cooked meals — plus a neutral count of meals out. Tap the nth pip to set
+that value; tap the filled pip you're on to take one back. Targets are editable
+at the bottom of the tab.
+
+**There is deliberately no calorie counting, no daily budget, and no score for
+the day.** Habit tracking is what people actually sustain, and the request here
+was to eat better rather than to hit a number. It also keeps the app honest
+with the decision to track weight without a target.
+
+Two rules the code holds to, both easy to break by accident:
+
+- **"Nothing logged" and "nothing hit yet" are different states.** Telling
+  someone who has been logging all day that they've logged nothing is just
+  wrong. `anyFoodLogged()` decides the first; `goalsMet()` decides the second.
+- **Meals out is counted, never scored.** It has no target, shows no
+  denominator, and can't lower your count. It exists so a pattern is visible.
+
+To change what's tracked, edit `FOOD` (section 7c). Anything with
+`neutral: true` is observation only and stays out of `FOOD_GOALS`.
+
+Eating used to be a yes/no "Ate well" toggle in Today's basics. That was
+removed when this tab arrived — a vague daily verdict sitting directly above
+real counters just contradicts them. Habits now come from the `HABITS` list,
+which both the Today screen and the consistency heatmap read.
+
 ## The plan
 
 | Phase | Weeks | What happens |
