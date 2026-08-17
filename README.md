@@ -94,9 +94,44 @@ phase.
 |---|---|
 | Exercises, sets, reps, cues | `DAY_A` / `DAY_B` (section 1) |
 | The run progression | `CARDIO` (section 1) |
+| Movement demos & form tips | `FIG` (section 7b) |
 | Days per week | `dayTemplate()` and the `/ 3` in `currentWeek()` |
 | Colors, light/dark | the `:root` token blocks at the top of the `<style>` |
 | The icon | `make_icons.py`, then re-run `python make_icons.py` |
+
+### Movement demonstrations
+
+Tap any exercise — in the Today card, in a week's detail, or via **Show me
+how** mid-session — for an animated figure of the movement plus two things to
+watch for.
+
+The figures are vector drawings, not video: a few kilobytes total, and they
+work with no connection. Each one is just two poses — the top and bottom of the
+rep — that the app interpolates between. The lowering phase is deliberately
+slower than the lift, because that's the tempo worth copying.
+
+To adjust one, edit its entry in `FIG`. Poses are joint coordinates in a
+100×100 box, figure facing right, floor at y=92:
+
+```js
+squat: {
+  props: [{ t:"floor" }],
+  a: { hd:[44,16], sh:[44,28], hip:[44,52], kn:[44,72], an:[44,92], … },  // top
+  b: { hd:[40,22], sh:[40,34], hip:[34,58], kn:[50,72], an:[46,92], … },  // bottom
+  watch: ["…", "…"],
+},
+```
+
+`hd` head, `sh` shoulder, `hip`, `kn` knee, `an` ankle, `el` elbow, `wr` wrist.
+Add `kn2`/`an2` (or `el2`/`wr2`) when the two sides differ, as in single-leg
+work; otherwise the far limb is drawn faintly behind at a small offset. `toe`
+is optional and draws a foot — needed for the calf raise, where without it the
+figure just appears to levitate. Set `hold: true` for a static position like a
+plank, and give only pose `a`.
+
+The frame is auto-fitted to whatever you draw, so you don't need to fill the
+box. Anyone whose device asks for reduced motion sees the two poses side by
+side instead of a loop.
 
 After editing, hard-reload on the phone (pull down to refresh) — `sw.js` serves
 the page network-first, so edits appear as soon as the phone can reach the

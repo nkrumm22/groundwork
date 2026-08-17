@@ -166,11 +166,38 @@ h2 { font-size: 13px; font-weight: 600; letter-spacing: .04em; text-transform: u
 .plan-title { font-size: 22px; font-weight: 640; letter-spacing: -.02em; margin: 0 0 6px; }
 .plan-desc { font-size: 14.5px; color: var(--ink-2); margin: 0 0 16px; }
 .ex-list { list-style: none; margin: 0 0 16px; padding: 0; }
-.ex-list li { display: flex; align-items: baseline; gap: 10px;
-              padding: 9px 0; border-top: 1px solid var(--grid); font-size: 15px; }
+.ex-list li { border-top: 1px solid var(--grid); }
 .ex-list li:first-child { border-top: 0; }
+.ex-row { display: flex; align-items: center; gap: 10px; width: 100%;
+          padding: 11px 0; font-size: 15px; text-align: left; }
 .ex-list .n { flex: 1; }
 .ex-list .r { color: var(--ink-2); font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.howdot { width: 20px; height: 20px; flex: none; border-radius: 50%;
+          background: var(--series-soft); color: var(--series);
+          font-size: 12px; font-weight: 700; line-height: 20px; text-align: center; }
+
+/* ── Movement demo ──────────────────────────────────────────────────── */
+.demo-stage { position: relative; background: var(--plane);
+              border: 1px solid var(--border); border-radius: 14px;
+              padding: 12px; margin-bottom: 16px; }
+.figure { display: block; width: 100%; max-width: 260px; height: auto; margin: 0 auto; }
+.figure .trunk, .figure .limb { stroke: var(--series); fill: none; }
+.figure .trunk { stroke-width: 5; }
+.figure .limb  { stroke-width: 3.8; }
+.figure .fig-head { fill: var(--series); }
+.figure .fig-far  { opacity: .32; }
+.demo-tag { position: absolute; right: 13px; top: 13px; font-size: 11.5px;
+            color: var(--muted); letter-spacing: .01em; }
+.demo-cue { font-size: 15px; color: var(--ink-2); line-height: 1.55; margin: 0 0 20px; }
+.demo-h { font-size: 12.5px; font-weight: 600; letter-spacing: .04em;
+          text-transform: uppercase; color: var(--muted); margin: 0 0 9px; }
+.demo-list { margin: 0 0 20px; padding-left: 19px; }
+.demo-list li { font-size: 14.5px; color: var(--ink-2); line-height: 1.5; margin-bottom: 9px; }
+/* Reduced-motion fallback: both poses side by side instead of a loop. */
+.demo-two { display: flex; gap: 8px; }
+.demo-two figure { flex: 1; margin: 0; }
+.demo-two figcaption { text-align: center; font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.demo-two .figure { max-width: 100%; }
 
 /* ── Habit row ──────────────────────────────────────────────────────────── */
 .habits { display: flex; gap: 8px; }
@@ -458,15 +485,19 @@ const DAY_A = {
   focus: "Push & core",
   moves: [
     { name: ["Wall push-up", "Incline push-up", "Knee push-up"],
+      fig:  ["pushWall", "pushIncline", "pushKnee"],
       cue: "Hands a bit wider than shoulders. Lower slowly — three seconds down — and keep your body one straight line from head to heels.",
       sets: [2,3,3], reps: [8,10,12] },
     { name: ["Sit-to-stand squat", "Bodyweight squat", "Tempo squat"],
+      fig:  ["squatChair", "squat", "squat"],
       cue: "Sit back onto a chair, tap it lightly, stand up. Knees track over your toes; chest stays proud.",
       sets: [2,3,3], reps: [8,12,12] },
     { name: ["Glute bridge", "Glute bridge (2s hold)", "Single-leg glute bridge"],
+      fig:  ["bridge", "bridge", "bridgeOne"],
       cue: "Lie on your back, feet flat. Squeeze your glutes to lift your hips — the work is in the glutes, not the lower back.",
       sets: [2,3,3], reps: [10,12,8] },
     { name: ["Dead bug", "Forearm plank", "Forearm plank"],
+      fig:  ["deadbug", "plank", "plank"],
       cue: "Brace like you're about to be poked in the stomach. Slow and controlled beats fast and sloppy.",
       sets: [2,3,3], reps: [8,20,40], hold: [false,true,true] },
   ],
@@ -477,18 +508,23 @@ const DAY_B = {
   focus: "Legs & pull",
   moves: [
     { name: ["Assisted split squat", "Split squat", "Reverse lunge"],
+      fig:  ["splitAssist", "split", "lunge"],
       cue: "One foot forward, one back. Drop straight down, not forward. Hold a wall for balance as long as you need it.",
       sets: [2,3,3], reps: [6,8,10] },
     { name: ["Doorway row", "Towel row", "Table row"],
+      fig:  ["rowDoor", "rowDoor", "rowTable"],
       cue: "Grip a sturdy doorframe, lean back with straight arms, pull your chest toward your hands. Squeeze the shoulder blades.",
       sets: [2,3,3], reps: [8,10,12] },
     { name: ["Hip hinge", "Hip hinge (slow)", "Single-leg deadlift"],
+      fig:  ["hinge", "hinge", "sldl"],
       cue: "Push your hips back like you're closing a car door with them. Back stays flat — this is not a squat.",
       sets: [2,3,3], reps: [10,12,10] },
     { name: ["Side plank (knees)", "Side plank (knees)", "Side plank"],
+      fig:  ["sidePlankKnee", "sidePlankKnee", "sidePlank"],
       cue: "Stack your shoulders and hips. Lift your hips until your body is one straight line. Each side.",
       sets: [2,2,3], reps: [15,25,30], hold: [true,true,true] },
     { name: ["Calf raise", "Step-up", "Step-up"],
+      fig:  ["calf", "stepup", "stepup"],
       cue: "Slow up, slower down. Full range — heels all the way down at the bottom.",
       sets: [2,3,3], reps: [12,10,12] },
   ],
@@ -538,7 +574,7 @@ function session(week, dayIdx) {
     type: "strength", week, dayIdx, phase: p, title: t.title, focus: t.focus,
     desc: PHASES[p].blurb,
     moves: t.moves.map(m => ({
-      name: m.name[p], cue: m.cue,
+      name: m.name[p], cue: m.cue, fig: m.fig ? m.fig[p] : null,
       sets: m.sets[p], reps: m.reps[p],
       hold: m.hold ? m.hold[p] : false,
     })),
@@ -694,6 +730,16 @@ function render() {
    6. TODAY
    ══════════════════════════════════════════════════════════════════════ */
 
+/* Shared by the Today card and the week sheet. Each row opens its demo. */
+function exListHTML(s, week, dayIdx) {
+  return `<ul class="ex-list">` + s.moves.map((m, i) =>
+    `<li><button class="ex-row" onclick="demoMove(${week},${dayIdx},${i})">
+        <span class="n">${esc(m.name)}</span>
+        <span class="r">${m.sets} × ${m.hold ? m.reps + "s" : m.reps}</span>
+        ${m.fig ? `<span class="howdot" aria-hidden="true">?</span>` : ""}
+      </button></li>`).join("") + `</ul>`;
+}
+
 function renderToday() {
   const h = new Date().getHours();
   $("#greet").textContent = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
@@ -731,9 +777,7 @@ function renderToday() {
       <p class="plan-desc">${esc(s.desc)}</p>`;
 
     if (s.type === "strength") {
-      html += `<ul class="ex-list">` + s.moves.map(m =>
-        `<li><span class="n">${esc(m.name)}</span><span class="r">${m.sets} × ${
-          m.hold ? m.reps + "s" : m.reps}</span></li>`).join("") + `</ul>`;
+      html += exListHTML(s, wk, dy);
     } else {
       const c = s.cardio;
       html += `<ul class="ex-list">`;
@@ -844,7 +888,9 @@ function drawRunner() {
     html += `<div class="run-step" style="margin-bottom:8px">Move ${R.i+1} of ${s.moves.length}</div>
       <div class="run-name">${esc(m.name)}</div>
       <p class="run-target">${m.sets} sets × ${m.hold ? m.reps + " seconds" : m.reps + " reps"}</p>
-      <p class="run-cue">${esc(m.cue)}</p>`;
+      <p class="run-cue">${esc(m.cue)}</p>
+      ${m.fig ? `<button class="btn soft sm" style="margin:-8px 0 22px"
+          onclick="demoCurrentMove()">Show me how</button>` : ""}`;
 
     if (m.hold) {
       html += holdTimerHTML(m.reps);
@@ -1026,13 +1072,418 @@ function celebrate(s, wk) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
+   7b. MOVEMENT DEMONSTRATIONS
+
+   Each move is two poses — the top and the bottom of the rep — and the
+   figure is interpolated between them. Drawn as vectors rather than video
+   so the whole thing stays a few kilobytes and works with no connection.
+
+   Coordinates live in a 100×100 box. The figure faces right; the floor is
+   y=92. Joints: hd head, sh shoulder, hip, kn knee, an ankle, el elbow,
+   wr wrist. The far arm and leg are drawn faintly behind, auto-offset,
+   unless a pose names kn2/an2/el2/wr2 explicitly (single-leg work).
+   ══════════════════════════════════════════════════════════════════════ */
+
+const FIG = {
+  /* ── Push ─────────────────────────────────────────────────────────── */
+  pushWall: {
+    props: [{ t:"wall", x:84 }],
+    a: { hd:[48,22], sh:[46,32], hip:[36,56], kn:[30,74], an:[24,92], el:[64,31], wr:[82,32] },
+    b: { hd:[57,24], sh:[54,34], hip:[40,56], kn:[32,74], an:[24,92], el:[68,44], wr:[82,32] },
+    watch: ["One straight line from head to heels — don't let your hips sag or pike.",
+            "Elbows angle back at about 45°, not flared straight out to the sides."],
+  },
+  pushIncline: {
+    props: [{ t:"box", x:70, y:64, w:26 }],
+    a: { hd:[62,36], sh:[56,44], hip:[40,68], kn:[28,80], an:[16,92], el:[68,54], wr:[76,64] },
+    b: { hd:[70,46], sh:[64,54], hip:[44,70], kn:[30,81], an:[16,92], el:[76,48], wr:[76,64] },
+    watch: ["The lower the surface, the harder it gets — a counter is easier than a chair.",
+            "Squeeze your glutes to stop your hips drifting toward the floor."],
+  },
+  pushKnee: {
+    props: [{ t:"floor" }],
+    a: { hd:[84,60], sh:[76,66], hip:[52,78], kn:[34,88], an:[20,76], el:[76,79], wr:[76,92] },
+    b: { hd:[86,74], sh:[78,79], hip:[54,83], kn:[34,89], an:[20,77], el:[89,85], wr:[76,92] },
+    watch: ["Straight line from head to knees — hips stay in line, don't pike up.",
+            "Put a cushion under your knees if the floor is hard."],
+  },
+
+  /* ── Squat family ─────────────────────────────────────────────────── */
+  squat: {
+    props: [{ t:"floor" }],
+    a: { hd:[44,16], sh:[44,28], hip:[44,52], kn:[44,72], an:[44,92], el:[46,40], wr:[48,52] },
+    b: { hd:[40,22], sh:[40,34], hip:[34,58], kn:[50,72], an:[46,92], el:[52,38], wr:[64,36] },
+    watch: ["Push your hips back first, then bend the knees — don't just drop straight down.",
+            "Knees track over your toes. Heels stay glued to the floor."],
+  },
+  squatChair: {
+    props: [{ t:"chair", x:16, y:62 }],
+    a: { hd:[44,16], sh:[44,28], hip:[44,52], kn:[44,72], an:[44,92], el:[46,40], wr:[48,52] },
+    b: { hd:[40,22], sh:[40,34], hip:[34,60], kn:[50,72], an:[46,92], el:[52,38], wr:[64,36] },
+    watch: ["Tap the chair lightly and stand straight back up — don't flop down onto it.",
+            "A higher seat makes it easier. Lower the seat as you get stronger."],
+  },
+  split: {
+    props: [{ t:"floor" }],
+    a: { hd:[48,16], sh:[48,28], hip:[48,52], kn:[36,72], an:[30,92], an2:[66,92], kn2:[62,72],
+         el:[50,40], wr:[52,52] },
+    b: { hd:[46,26], sh:[46,38], hip:[46,60], kn:[34,78], an:[30,92], an2:[68,92], kn2:[66,74],
+         el:[48,50], wr:[50,62] },
+    watch: ["Drop straight down, not forward — the back knee heads for the floor.",
+            "Most of your weight stays on the front foot."],
+  },
+  splitAssist: {
+    props: [{ t:"wall", x:88 }],
+    a: { hd:[48,16], sh:[48,28], hip:[48,52], kn:[36,72], an:[30,92], an2:[66,92], kn2:[62,72],
+         el:[66,26], wr:[86,30] },
+    b: { hd:[46,26], sh:[46,38], hip:[46,60], kn:[34,78], an:[30,92], an2:[68,92], kn2:[66,74],
+         el:[66,34], wr:[86,32] },
+    watch: ["Use the wall for balance only — don't pull yourself up with your arm.",
+            "Let go for a rep or two when you feel steady."],
+  },
+  lunge: {
+    props: [{ t:"floor" }],
+    a: { hd:[44,16], sh:[44,28], hip:[44,52], kn:[44,72], an:[44,92], kn2:[46,72], an2:[46,92],
+         el:[46,40], wr:[48,52] },
+    b: { hd:[42,24], sh:[42,36], hip:[42,58], kn:[32,76], an:[28,92], kn2:[62,74], an2:[70,92],
+         el:[44,48], wr:[46,60] },
+    watch: ["Step backwards, not forwards — it's far kinder to the front knee.",
+            "Torso stays upright. Push through the front heel to stand up."],
+  },
+
+  /* ── Hinge family ─────────────────────────────────────────────────── */
+  hinge: {
+    props: [{ t:"floor" }],
+    a: { hd:[44,16], sh:[44,28], hip:[44,52], kn:[44,72], an:[44,92], el:[46,40], wr:[48,52] },
+    b: { hd:[68,34], sh:[60,38], hip:[36,52], kn:[40,72], an:[44,92], el:[62,50], wr:[64,62] },
+    watch: ["Hips travel backwards — imagine shutting a car door with your backside.",
+            "Back stays flat, knees barely bend. This is not a squat."],
+  },
+  sldl: {
+    props: [{ t:"floor" }],
+    a: { hd:[44,16], sh:[44,28], hip:[44,52], kn:[44,72], an:[44,92], kn2:[46,72], an2:[46,92],
+         el:[46,40], wr:[48,52] },
+    b: { hd:[70,40], sh:[62,44], hip:[38,52], kn:[40,72], an:[44,92], kn2:[22,50], an2:[8,52],
+         el:[64,56], wr:[66,68] },
+    watch: ["The lifted leg and your back form one straight line, like a see-saw.",
+            "Hips stay level — don't let the free hip rotate open toward the ceiling."],
+  },
+
+  /* ── Bridge ───────────────────────────────────────────────────────── */
+  bridge: {
+    props: [{ t:"floor" }],
+    a: { hd:[16,86], sh:[26,86], hip:[50,86], kn:[68,78], an:[76,92], el:[30,90], wr:[42,92] },
+    b: { hd:[16,86], sh:[26,86], hip:[50,68], kn:[70,76], an:[76,92], el:[30,90], wr:[42,92] },
+    watch: ["Squeeze your glutes to lift — if you feel it in your lower back, lift less high.",
+            "Ribs stay down. Stop where your body makes a straight ramp."],
+  },
+  bridgeOne: {
+    props: [{ t:"floor" }],
+    a: { hd:[16,86], sh:[26,86], hip:[50,86], kn:[68,78], an:[76,92], kn2:[70,74], an2:[86,70],
+         el:[30,90], wr:[42,92] },
+    b: { hd:[16,86], sh:[26,86], hip:[50,66], kn:[70,76], an:[76,92], kn2:[74,56], an2:[92,48],
+         el:[30,90], wr:[42,92] },
+    watch: ["Keep your hips level — the lifted side wants to drop. Don't let it.",
+            "Only the heel of the working foot presses into the floor."],
+  },
+
+  /* ── Core ─────────────────────────────────────────────────────────── */
+  plank: {
+    hold: true,
+    props: [{ t:"floor" }],
+    a: { hd:[32,72], sh:[44,76], hip:[66,80], kn:[82,84], an:[96,88], el:[44,90], wr:[30,92] },
+    watch: ["Elbows directly under your shoulders. Squeeze glutes and brace your stomach.",
+            "Hips level — a sagging back or a raised backside both mean stop and reset."],
+  },
+  deadbug: {
+    props: [{ t:"floor" }],
+    a: { hd:[18,84], sh:[28,84], hip:[54,86], kn:[64,66], an:[80,66], kn2:[64,68], an2:[80,68],
+         el:[30,66], wr:[32,50] },
+    b: { hd:[18,84], sh:[28,84], hip:[54,86], kn:[64,66], an:[80,66], kn2:[76,84], an2:[92,88],
+         el:[20,68], wr:[10,56] },
+    watch: ["Press your lower back into the floor and keep it there the whole time.",
+            "Opposite arm and leg move together. Slow — this is a control exercise."],
+  },
+  sidePlankKnee: {
+    hold: true,
+    props: [{ t:"floor" }],
+    a: { hd:[22,52], sh:[32,58], hip:[58,70], kn:[74,80], an:[90,74], el:[32,80], wr:[18,84] },
+    watch: ["Shoulders and hips stacked — don't let your chest roll toward the floor.",
+            "Push the floor away with your elbow to keep the shoulder strong."],
+  },
+  sidePlank: {
+    hold: true,
+    props: [{ t:"floor" }],
+    a: { hd:[20,50], sh:[30,56], hip:[58,70], kn:[74,80], an:[90,90], el:[30,78], wr:[16,82] },
+    watch: ["One straight line from head to feet, feet stacked or slightly staggered.",
+            "Lift your hips until the line is straight, then hold and breathe."],
+  },
+
+  /* ── Pull ─────────────────────────────────────────────────────────── */
+  rowDoor: {
+    props: [{ t:"post", x:80 }],
+    a: { hd:[30,26], sh:[34,36], hip:[42,60], kn:[48,76], an:[54,92], el:[54,34], wr:[76,34] },
+    b: { hd:[46,22], sh:[50,32], hip:[50,58], kn:[52,76], an:[54,92], el:[62,44], wr:[76,34] },
+    watch: ["Pull your shoulder blades together first, then bend the elbows.",
+            "Walk your feet forward to make it harder, back to make it easier."],
+  },
+  rowTable: {
+    props: [{ t:"table", y:44 }],
+    a: { hd:[24,74], sh:[34,74], hip:[58,76], kn:[76,78], an:[92,86], el:[36,60], wr:[38,46] },
+    b: { hd:[24,64], sh:[34,64], hip:[58,70], kn:[76,74], an:[92,84], el:[46,54], wr:[38,46] },
+    watch: ["Body stays one straight plank — don't let your hips drop first.",
+            "Chest comes to the edge of the table, not your chin."],
+  },
+
+  /* ── Calf & step ──────────────────────────────────────────────────── */
+  calf: {
+    props: [{ t:"floor" }],
+    a: { hd:[44,16], sh:[44,28], hip:[44,52], kn:[44,72], an:[44,88], toe:[54,90],
+         el:[46,40], wr:[48,52] },
+    b: { hd:[44,10], sh:[44,22], hip:[44,46], kn:[46,66], an:[46,82], toe:[54,90],
+         el:[46,34], wr:[48,46] },
+    watch: ["Rise as high as you can onto the balls of your feet, then lower slowly.",
+            "Full range — let the heels drop all the way down at the bottom."],
+  },
+  stepup: {
+    props: [{ t:"step", x:56, y:70 }],
+    a: { hd:[36,26], sh:[36,38], hip:[36,60], kn:[36,76], an:[36,92], kn2:[54,60], an2:[64,70],
+         el:[38,50], wr:[40,62] },
+    b: { hd:[58,10], sh:[58,22], hip:[58,46], kn:[58,60], an:[62,70], kn2:[46,60], an2:[40,78],
+         el:[60,34], wr:[62,46] },
+    watch: ["Drive through the heel of the foot on the step — don't push off the floor.",
+            "Lower yourself back down slowly instead of dropping."],
+  },
+};
+
+/* ── Renderer ───────────────────────────────────────────────────────── */
+
+/* `toe` is optional — it draws a foot, which is the only way a heel raise
+   reads as a heel raise rather than the figure levitating. */
+const JOINTS = ["hd","sh","hip","kn","an","el","wr","kn2","an2","el2","wr2","toe"];
+
+/* Fill in a far arm/leg when the pose doesn't name one. */
+function fullPose(p) {
+  const q = {};
+  JOINTS.forEach(k => { if (p[k]) q[k] = p[k]; });
+  const off = 5;
+  if (!q.kn2 && q.kn) q.kn2 = [q.kn[0] + off, q.kn[1]];
+  if (!q.an2 && q.an) q.an2 = [q.an[0] + off, q.an[1]];
+  if (!q.el2 && q.el) q.el2 = [q.el[0] + off, q.el[1]];
+  if (!q.wr2 && q.wr) q.wr2 = [q.wr[0] + off, q.wr[1]];
+  return q;
+}
+
+const ease = t => t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
+
+function lerpPose(A, B, t) {
+  const e = ease(t), out = {};
+  JOINTS.forEach(k => {
+    if (!A[k] || !B[k]) return;
+    out[k] = [A[k][0] + (B[k][0]-A[k][0])*e, A[k][1] + (B[k][1]-A[k][1])*e];
+  });
+  return out;
+}
+
+function propSVG(p) {
+  const s = 'fill="var(--grid)" stroke="var(--axis)" stroke-width="1.2"';
+  switch (p.t) {
+    case "floor": return `<line x1="2" y1="92" x2="98" y2="92" stroke="var(--axis)" stroke-width="1.6"/>`;
+    case "wall":  return `<line x1="${p.x}" y1="6" x2="${p.x}" y2="92" stroke="var(--axis)" stroke-width="1.6"/>
+                          <line x1="2" y1="92" x2="98" y2="92" stroke="var(--axis)" stroke-width="1.6"/>`;
+    case "post":  return `<line x1="${p.x}" y1="4" x2="${p.x}" y2="92" stroke="var(--axis)" stroke-width="2.4"/>
+                          <line x1="2" y1="92" x2="98" y2="92" stroke="var(--axis)" stroke-width="1.6"/>`;
+    case "box":   return `<rect x="${p.x}" y="${p.y}" width="${p.w}" height="${92-p.y}" rx="1.5" ${s}/>
+                          <line x1="2" y1="92" x2="98" y2="92" stroke="var(--axis)" stroke-width="1.6"/>`;
+    case "step":  return `<rect x="${p.x}" y="${p.y}" width="40" height="${92-p.y}" rx="1.5" ${s}/>
+                          <line x1="2" y1="92" x2="98" y2="92" stroke="var(--axis)" stroke-width="1.6"/>`;
+    case "table": return `<rect x="14" y="${p.y}" width="76" height="3.5" rx="1.5" ${s}/>
+                          <line x1="20" y1="${p.y+3}" x2="20" y2="92" stroke="var(--axis)" stroke-width="1.6"/>
+                          <line x1="84" y1="${p.y+3}" x2="84" y2="92" stroke="var(--axis)" stroke-width="1.6"/>
+                          <line x1="2" y1="92" x2="98" y2="92" stroke="var(--axis)" stroke-width="1.6"/>`;
+    case "chair": return `<rect x="${p.x}" y="${p.y}" width="30" height="3.5" rx="1.5" ${s}/>
+                          <line x1="${p.x+2}" y1="${p.y+3}" x2="${p.x+2}" y2="92" stroke="var(--axis)" stroke-width="1.6"/>
+                          <line x1="${p.x+27}" y1="${p.y+3}" x2="${p.x+27}" y2="92" stroke="var(--axis)" stroke-width="1.6"/>
+                          <line x1="${p.x+2}" y1="${p.y}" x2="${p.x+2}" y2="${p.y-22}" stroke="var(--axis)" stroke-width="1.6"/>
+                          <line x1="2" y1="92" x2="98" y2="92" stroke="var(--axis)" stroke-width="1.6"/>`;
+    default: return "";
+  }
+}
+
+/* Roughly what each prop occupies, so the frame can be fitted to it. */
+function propBox(p) {
+  const floor = [2, 92, 98, 92];
+  switch (p.t) {
+    case "wall": case "post": return [Math.min(2,p.x), 6, Math.max(98,p.x), 92];
+    case "box":   return [Math.min(2,p.x), p.y, Math.max(98,p.x+p.w), 92];
+    case "step":  return [Math.min(2,p.x), p.y, Math.max(98,p.x+40), 92];
+    case "table": return [2, p.y, 98, 92];
+    case "chair": return [Math.min(2,p.x), p.y-22, Math.max(98,p.x+30), 92];
+    default: return floor;
+  }
+}
+
+/* Fit the frame to the movement so figures fill the card instead of
+   floating in whitespace. Height is floored so wide poses (planks) don't
+   render as a letterbox strip. */
+function figViewBox(f) {
+  let x0 = 100, y0 = 100, x1 = 0, y1 = 0;
+  const eat = (x, y) => { x0=Math.min(x0,x); y0=Math.min(y0,y); x1=Math.max(x1,x); y1=Math.max(y1,y); };
+  [f.a, f.b].forEach(p => {
+    if (!p) return;
+    const q = fullPose(p);
+    JOINTS.forEach(k => { if (q[k]) eat(q[k][0], q[k][1]); });
+    if (q.hd) { eat(q.hd[0]-8, q.hd[1]-8); eat(q.hd[0]+8, q.hd[1]+8); }
+  });
+  (f.props || []).forEach(pr => { const b = propBox(pr); eat(b[0], b[1]); eat(b[2], b[3]); });
+
+  const pad = 4;
+  x0 -= pad; y0 -= pad; x1 += pad; y1 += pad;
+  const minH = 52;
+  if (y1 - y0 < minH) {
+    const grow = (minH - (y1 - y0)) / 2;
+    y0 -= grow; y1 += grow;
+  }
+  return `${x0.toFixed(1)} ${y0.toFixed(1)} ${(x1-x0).toFixed(1)} ${(y1-y0).toFixed(1)}`;
+}
+
+function figureMarkup(id) {
+  const f = FIG[id];
+  if (!f) return "";
+  const L = (n, cls) => `<line class="${cls}" data-j="${n}" stroke-linecap="round"/>`;
+  return `<svg viewBox="${figViewBox(f)}" class="figure" data-fig="${id}" role="img"
+      aria-label="Animated demonstration of the movement">
+    <g class="fig-props">${(f.props||[]).map(propSVG).join("")}</g>
+    <g class="fig-far">${L("thigh2","limb")}${L("shin2","limb")}${L("upper2","limb")}${L("fore2","limb")}</g>
+    <g class="fig-near">
+      ${L("spine","trunk")}${L("thigh","limb")}${L("shin","limb")}${L("upper","limb")}${L("fore","limb")}${L("foot","limb")}
+      <circle class="fig-head" r="6.5"/>
+    </g>
+  </svg>`;
+}
+
+function setFigurePose(svg, pose) {
+  const set = (n, p1, p2) => {
+    const el = svg.querySelector(`[data-j="${n}"]`);
+    if (!el) return;
+    // A limb with no coordinates would otherwise draw as a round cap at the
+    // origin — a stray dot in the corner of the frame.
+    if (!p1 || !p2) { el.style.display = "none"; return; }
+    el.style.display = "";
+    el.setAttribute("x1", p1[0]); el.setAttribute("y1", p1[1]);
+    el.setAttribute("x2", p2[0]); el.setAttribute("y2", p2[1]);
+  };
+  set("spine",  pose.sh,  pose.hip);  set("foot",  pose.an,  pose.toe);
+  set("thigh",  pose.hip, pose.kn);   set("shin",  pose.kn,  pose.an);
+  set("upper",  pose.sh,  pose.el);   set("fore",  pose.el,  pose.wr);
+  set("thigh2", pose.hip, pose.kn2);  set("shin2", pose.kn2, pose.an2);
+  set("upper2", pose.sh,  pose.el2);  set("fore2", pose.el2, pose.wr2);
+  const h = svg.querySelector(".fig-head");
+  if (h && pose.hd) { h.setAttribute("cx", pose.hd[0]); h.setAttribute("cy", pose.hd[1]); }
+}
+
+/* Lowering is deliberately slower than lifting — that's the tempo we want
+   them copying, and it's where most of the benefit lives. */
+const CYCLE = [
+  { to: 1, ms: 2600 },   // lower
+  { to: 1, ms: 260  },   // pause at the bottom
+  { to: 0, ms: 1100 },   // lift
+  { to: 0, ms: 420  },   // pause at the top
+];
+
+let figAnim = null;
+
+function animateFigures(root) {
+  stopFigures();
+  const svgs = Array.from(root.querySelectorAll("svg.figure"));
+  if (!svgs.length) return;
+  const items = svgs.map(svg => {
+    const f = FIG[svg.dataset.fig];
+    return { svg, f, A: fullPose(f.a), B: fullPose(f.b || f.a) };
+  });
+  items.forEach(it => setFigurePose(it.svg, it.A));
+  if (items.every(it => it.f.hold)) return;      // nothing to animate
+
+  const total = CYCLE.reduce((a, s) => a + s.ms, 0);
+  let start = null;
+  const frame = ts => {
+    if (start === null) start = ts;
+    let e = (ts - start) % total, from = 0, t = 0;
+    for (const step of CYCLE) {
+      if (e < step.ms) { t = from + (step.to - from) * (e / step.ms); break; }
+      e -= step.ms; from = step.to; t = step.to;
+    }
+    items.forEach(it => {
+      if (it.f.hold) return;
+      setFigurePose(it.svg, lerpPose(it.A, it.B, t));
+    });
+    figAnim = requestAnimationFrame(frame);
+  };
+  figAnim = requestAnimationFrame(frame);
+}
+
+function stopFigures() { if (figAnim) cancelAnimationFrame(figAnim); figAnim = null; }
+
+/* ── The demo sheet ─────────────────────────────────────────────────── */
+
+function showDemo(figId, name, cue, back) {
+  const f = FIG[figId];
+  if (!f) return;
+  // Someone who asked the OS for less motion still deserves the demonstration,
+  // so show the two ends of the rep side by side rather than looping.
+  const still = !!(window.matchMedia &&
+                   window.matchMedia("(prefers-reduced-motion: reduce)").matches) && !f.hold;
+  const stage = still
+    ? `<div class="demo-two">
+         <figure>${figureMarkup(figId)}<figcaption>Start</figcaption></figure>
+         <figure>${figureMarkup(figId)}<figcaption>Bottom</figcaption></figure>
+       </div>`
+    : `${figureMarkup(figId)}
+       <span class="demo-tag">${f.hold ? "Hold this position" : "Slow down, faster up"}</span>`;
+
+  openSheet(`
+    <div class="grab"></div>
+    <h3>${esc(name)}</h3>
+    <div class="demo-stage">${stage}</div>
+    <p class="demo-cue">${esc(cue || "")}</p>
+    <p class="demo-h">Watch for</p>
+    <ul class="demo-list">${(f.watch||[]).map(w => `<li>${esc(w)}</li>`).join("")}</ul>
+    <button class="btn ghost" onclick="closeSheet()">${back || "Got it"}</button>
+  `);
+
+  if (still) {
+    const svgs = $("#sheet").querySelectorAll("svg.figure");
+    setFigurePose(svgs[0], fullPose(f.a));
+    setFigurePose(svgs[1], fullPose(f.b));
+  } else {
+    animateFigures($("#sheet"));
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
    8. FREE LOGGING
    ══════════════════════════════════════════════════════════════════════ */
 
 let sheetKind = null;
 
 function openSheet(html) { $("#sheet").innerHTML = html; $("#veil").classList.add("on"); }
-function closeSheet() { $("#veil").classList.remove("on"); sheetKind = null; }
+function closeSheet() {
+  stopFigures();                       // don't leave a rAF loop running
+  $("#veil").classList.remove("on");
+  sheetKind = null;
+}
+
+/* Demo entry points. Both re-derive the move rather than passing strings
+   through an onclick attribute, which would break on apostrophes. */
+function demoCurrentMove() {
+  const m = R && R.s.moves && R.s.moves[R.i];
+  if (m && m.fig) showDemo(m.fig, m.name, m.cue, "Back to the set");
+}
+function demoMove(week, dayIdx, i) {
+  const s = session(week, dayIdx);
+  const m = s.moves && s.moves[i];
+  if (m && m.fig) showDemo(m.fig, m.name, m.cue);
+}
 
 function openLogWorkout() {
   sheetKind = "run";
@@ -1514,9 +1965,7 @@ function showWeek(w) {
       <p class="card-title">Day ${d+1} · ${esc(s.title)}</p>
       <p class="card-meta" style="margin-bottom:10px">${esc(s.focus)}</p>`;
     if (s.type === "strength") {
-      html += `<ul class="ex-list">` + s.moves.map(m =>
-        `<li><span class="n">${esc(m.name)}</span><span class="r">${m.sets} × ${
-          m.hold ? m.reps + "s" : m.reps}</span></li>`).join("") + `</ul>`;
+      html += exListHTML(s, w, d);
     } else {
       const c = s.cardio;
       html += `<p style="font-size:14.5px;color:var(--ink-2);margin:0">${esc(c.desc)}</p>`;
