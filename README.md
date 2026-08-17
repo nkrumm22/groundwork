@@ -113,9 +113,32 @@ adjust the default.
 On cardio days the interval timer handles the jog/walk switches, beeping and
 buzzing at each change. Plank-style holds get their own countdown.
 
-The session clock and rest timer work off wall-clock timestamps rather than
-counting down a variable, so a locked screen or a backgrounded tab can't make
-them drift.
+**Every timer runs on wall-clock timestamps**, not by decrementing a variable
+once a second. Each phase stores the moment it ends, so a throttled or
+suspended tab can't make the clock drift — on the next tick it simply
+recalculates where it should be.
+
+### When the screen was off
+
+Phones suspend JavaScript when the screen locks, so a run can come back to the
+app several minutes adrift. The app can't know whether you carried on running
+during that time, and guessing wrong either invents work you didn't do or
+throws away work you did. So it asks.
+
+Gaps under 15 seconds (`GAP_ASK`) are ordinary throttling and get absorbed
+silently. Anything longer pauses the timer, leaves your position untouched, and
+offers two answers:
+
+- **I kept going** — wall-clock wins. The queue fast-forwards to where you
+  actually are, sounding the cue for the phase you land in.
+- **I stopped** — the gap is discarded and you resume exactly where you were.
+
+If the gap was longer than the whole remaining session, it ends the session
+rather than running off the end of the queue.
+
+One thing this can't fix: while the screen was off you didn't hear the
+jog/walk cues, so you may not have switched when the plan wanted. The app
+corrects the clock, not the run.
 
 ### Movement demonstrations
 
