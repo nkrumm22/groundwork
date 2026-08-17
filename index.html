@@ -1,0 +1,1587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Groundwork</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="description" content="A 12-week bodyweight and walk-to-run plan that meets you where you are.">
+
+<!-- Makes it install to the home screen and open fullscreen, like a real app -->
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Groundwork">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#fcfcfb" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1a1a19" media="(prefers-color-scheme: dark)">
+
+<style>
+/* ── Design tokens ──────────────────────────────────────────────────────────
+   Chart colors come from a validated palette: one blue for series, a blue
+   light→dark ramp for the heatmap. Text never wears a data color.          */
+:root {
+  color-scheme: light;
+  --surface:      #fcfcfb;
+  --plane:        #f9f9f7;
+  --raised:       #ffffff;
+  --ink:          #0b0b0b;
+  --ink-2:        #52514e;
+  --muted:        #898781;
+  --grid:         #e1e0d9;
+  --axis:         #c3c2b7;
+  --border:       rgba(11,11,11,.10);
+  --series:       #2a78d6;
+  --series-soft:  rgba(42,120,214,.10);
+  --good:         #006300;
+  --warn:         #fab219;
+  /* sequential blue ramp — heatmap bins */
+  --seq-0:  #e6e5df;
+  --seq-1:  #b7d3f6;
+  --seq-2:  #5598e7;
+  --seq-3:  #256abf;
+  --shadow: 0 1px 2px rgba(11,11,11,.05), 0 4px 16px rgba(11,11,11,.04);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --surface:      #1a1a19;
+    --plane:        #0d0d0d;
+    --raised:       #232321;
+    --ink:          #ffffff;
+    --ink-2:        #c3c2b7;
+    --muted:        #898781;
+    --grid:         #2c2c2a;
+    --axis:         #383835;
+    --border:       rgba(255,255,255,.10);
+    --series:       #3987e5;
+    --series-soft:  rgba(57,135,229,.14);
+    --good:         #0ca30c;
+    --seq-0:  #2c2c2a;
+    --seq-1:  #184f95;
+    --seq-2:  #2a78d6;
+    --seq-3:  #86b6ef;
+    --shadow: none;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface:      #1a1a19;
+  --plane:        #0d0d0d;
+  --raised:       #232321;
+  --ink:          #ffffff;
+  --ink-2:        #c3c2b7;
+  --muted:        #898781;
+  --grid:         #2c2c2a;
+  --axis:         #383835;
+  --border:       rgba(255,255,255,.10);
+  --series:       #3987e5;
+  --series-soft:  rgba(57,135,229,.14);
+  --good:         #0ca30c;
+  --seq-0:  #2c2c2a;
+  --seq-1:  #184f95;
+  --seq-2:  #2a78d6;
+  --seq-3:  #86b6ef;
+  --shadow: none;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--plane);
+  color: var(--ink);
+  font: 400 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  overscroll-behavior-y: none;
+  -webkit-font-smoothing: antialiased;
+}
+button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
+input, select, textarea { font: inherit; color: inherit; }
+
+/* ── Layout shell ───────────────────────────────────────────────────────── */
+#app {
+  max-width: 560px;
+  margin: 0 auto;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: max(14px, env(safe-area-inset-top)) 16px
+           calc(78px + env(safe-area-inset-bottom)) 16px;
+}
+.screen { display: none; animation: fade .18s ease; }
+.screen.on { display: block; }
+@keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .screen { animation: none; } }
+
+h1 { font-size: 26px; font-weight: 640; letter-spacing: -.02em; margin: 6px 0 2px; }
+h2 { font-size: 13px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+     color: var(--muted); margin: 26px 0 10px; }
+.sub { color: var(--ink-2); font-size: 14px; margin: 0 0 18px; }
+
+/* ── Cards ──────────────────────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+}
+.card.flat { box-shadow: none; }
+.card-title { font-size: 17px; font-weight: 600; margin: 0 0 4px; letter-spacing: -.01em; }
+.card-meta { font-size: 13px; color: var(--muted); margin: 0; }
+
+/* ── Buttons ────────────────────────────────────────────────────────────── */
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; min-height: 52px; padding: 14px 18px;
+  background: var(--series); color: #fff;
+  border-radius: 13px; font-size: 16px; font-weight: 600;
+  transition: transform .08s ease, opacity .15s ease;
+}
+.btn:active { transform: scale(.985); }
+.btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--border); }
+.btn.soft  { background: var(--series-soft); color: var(--series); }
+.btn.sm    { min-height: 42px; padding: 9px 14px; font-size: 14.5px; border-radius: 11px; width: auto; }
+.btn[disabled] { opacity: .45; pointer-events: none; }
+.btn-row { display: flex; gap: 8px; }
+.btn-row .btn { width: auto; flex: 1; }
+
+/* ── Stat tiles ─────────────────────────────────────────────────────────── */
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+.tile {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 13px 12px; text-align: left;
+}
+.tile .v { font-size: 25px; font-weight: 650; letter-spacing: -.02em; line-height: 1.15; }
+.tile .l { font-size: 11.5px; color: var(--muted); margin-top: 3px; line-height: 1.3; }
+
+/* Hero number — exactly one per view */
+.hero { font-size: 52px; font-weight: 660; letter-spacing: -.035em; line-height: 1; }
+.hero-unit { font-size: 17px; font-weight: 500; color: var(--ink-2); margin-left: 6px; letter-spacing: 0; }
+
+/* ── Today: the plan card ───────────────────────────────────────────────── */
+.plan-card { background: var(--surface); border: 1px solid var(--border);
+             border-radius: 18px; padding: 20px; margin-bottom: 12px; box-shadow: var(--shadow); }
+.eyebrow { font-size: 12.5px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase;
+           color: var(--series); margin-bottom: 7px; }
+.plan-title { font-size: 22px; font-weight: 640; letter-spacing: -.02em; margin: 0 0 6px; }
+.plan-desc { font-size: 14.5px; color: var(--ink-2); margin: 0 0 16px; }
+.ex-list { list-style: none; margin: 0 0 16px; padding: 0; }
+.ex-list li { display: flex; align-items: baseline; gap: 10px;
+              padding: 9px 0; border-top: 1px solid var(--grid); font-size: 15px; }
+.ex-list li:first-child { border-top: 0; }
+.ex-list .n { flex: 1; }
+.ex-list .r { color: var(--ink-2); font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* ── Habit row ──────────────────────────────────────────────────────────── */
+.habits { display: flex; gap: 8px; }
+.habit {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 13px 6px; border-radius: 13px;
+  border: 1px solid var(--border); background: var(--surface);
+  font-size: 12px; color: var(--ink-2); text-align: center; line-height: 1.25;
+  transition: background .15s ease, border-color .15s ease;
+}
+.habit .dot {
+  width: 26px; height: 26px; border-radius: 50%;
+  border: 2px solid var(--axis);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; color: transparent; transition: all .15s ease;
+}
+.habit.on { background: var(--series-soft); border-color: transparent; color: var(--ink); }
+.habit.on .dot { background: var(--series); border-color: var(--series); color: #fff; }
+
+/* ── Bottom tab bar ─────────────────────────────────────────────────────── */
+#tabs {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+  display: flex; justify-content: center; gap: 2px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: saturate(180%) blur(16px);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  border-top: 1px solid var(--border);
+  padding: 7px 8px calc(7px + env(safe-area-inset-bottom));
+}
+#tabs .tab {
+  flex: 1; max-width: 130px;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 5px 4px; border-radius: 11px;
+  font-size: 10.5px; font-weight: 550; color: var(--muted);
+  transition: color .15s ease;
+}
+#tabs .tab svg { width: 23px; height: 23px; stroke: currentColor; fill: none;
+                 stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+#tabs .tab.on { color: var(--series); }
+
+/* ── Charts ─────────────────────────────────────────────────────────────── */
+.chart-wrap { position: relative; margin: 4px 0 0; }
+.chart-wrap svg { display: block; width: 100%; height: auto; overflow: visible; }
+.tick { font-size: 10.5px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+.endlabel { font-size: 12px; font-weight: 600; fill: var(--ink); }
+.tip {
+  position: absolute; pointer-events: none; opacity: 0;
+  background: var(--raised); border: 1px solid var(--border);
+  border-radius: 9px; padding: 7px 10px; font-size: 12.5px; line-height: 1.4;
+  box-shadow: 0 4px 14px rgba(11,11,11,.13); transition: opacity .1s ease;
+  white-space: nowrap; z-index: 5; color: var(--ink);
+}
+.tip b { font-weight: 620; font-variant-numeric: tabular-nums; }
+.tip .d { color: var(--muted); font-size: 11.5px; }
+
+/* Heatmap */
+.heat { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 1fr);
+        gap: 3px; }
+.heat i { display: block; width: 100%; aspect-ratio: 1; border-radius: 3px;
+          background: var(--seq-0); }
+.heat i.l1 { background: var(--seq-1); }
+.heat i.l2 { background: var(--seq-2); }
+.heat i.l3 { background: var(--seq-3); }
+.heat i.future { background: transparent; box-shadow: inset 0 0 0 1px var(--grid); }
+.legend { display: flex; align-items: center; gap: 6px; margin-top: 10px;
+          font-size: 11.5px; color: var(--muted); }
+.legend i { width: 11px; height: 11px; border-radius: 3px; display: block; }
+
+/* Data table twin — every chart has one */
+.toggle-table { font-size: 12.5px; color: var(--series); font-weight: 550; margin-top: 12px; }
+table.data { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13.5px; }
+table.data th, table.data td { text-align: left; padding: 7px 4px; border-bottom: 1px solid var(--grid); }
+table.data th { color: var(--muted); font-weight: 550; font-size: 12px; }
+table.data td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+.empty { color: var(--muted); font-size: 14px; text-align: center; padding: 26px 10px; line-height: 1.55; }
+
+/* ── History list ───────────────────────────────────────────────────────── */
+.entry { display: flex; align-items: center; gap: 13px; padding: 13px 0; border-bottom: 1px solid var(--grid); }
+.entry:last-child { border-bottom: 0; }
+.entry .ic { width: 36px; height: 36px; flex: none; border-radius: 10px;
+             background: var(--series-soft); display: flex; align-items: center; justify-content: center; }
+.entry .ic svg { width: 19px; height: 19px; stroke: var(--series); fill: none; stroke-width: 2;
+                 stroke-linecap: round; stroke-linejoin: round; }
+.entry .body { flex: 1; min-width: 0; }
+.entry .t { font-size: 15px; font-weight: 550; }
+.entry .m { font-size: 12.5px; color: var(--muted); margin-top: 1px; }
+.entry .del { color: var(--muted); font-size: 20px; padding: 4px 8px; line-height: 1; }
+
+/* ── Plan overview ──────────────────────────────────────────────────────── */
+.phase { margin-bottom: 8px; }
+.phase-head { font-size: 15px; font-weight: 620; margin-bottom: 2px; }
+.phase-blurb { font-size: 13.5px; color: var(--ink-2); margin-bottom: 12px; }
+.wk { display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+      border: 1px solid var(--border); border-radius: 12px; margin-bottom: 7px;
+      background: var(--surface); text-align: left; width: 100%; }
+.wk.now { border-color: var(--series); background: var(--series-soft); }
+.wk.done { opacity: .55; }
+.wk .num { font-size: 12px; font-weight: 620; color: var(--muted); width: 46px; flex: none;
+           letter-spacing: .03em; text-transform: uppercase; }
+.wk.now .num { color: var(--series); }
+.wk .what { flex: 1; font-size: 14px; }
+.wk .chev { color: var(--muted); font-size: 15px; }
+
+/* ── Modal / sheet ──────────────────────────────────────────────────────── */
+#veil { position: fixed; inset: 0; background: rgba(11,11,11,.45); z-index: 50;
+        display: none; align-items: flex-end; justify-content: center; }
+#veil.on { display: flex; }
+.sheet {
+  background: var(--surface); width: 100%; max-width: 560px;
+  border-radius: 20px 20px 0 0; padding: 20px 18px calc(20px + env(safe-area-inset-bottom));
+  max-height: 92vh; max-height: 92dvh; overflow-y: auto;
+  animation: rise .22s cubic-bezier(.32,.72,0,1);
+}
+@keyframes rise { from { transform: translateY(100%); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .sheet { animation: none; } }
+.sheet h3 { font-size: 19px; font-weight: 640; margin: 0 0 16px; letter-spacing: -.015em; }
+.grab { width: 36px; height: 4px; border-radius: 2px; background: var(--axis);
+        margin: -6px auto 14px; }
+
+label.f { display: block; margin-bottom: 14px; }
+label.f span { display: block; font-size: 13px; color: var(--ink-2); margin-bottom: 6px; font-weight: 500; }
+.in {
+  width: 100%; padding: 13px 14px; border-radius: 12px;
+  border: 1px solid var(--border); background: var(--plane);
+  font-size: 16px; /* 16px avoids iOS zoom-on-focus */
+}
+.in:focus { outline: 2px solid var(--series); outline-offset: -1px; border-color: transparent; }
+textarea.in { min-height: 74px; resize: vertical; }
+.seg { display: flex; gap: 6px; }
+.seg button {
+  flex: 1; padding: 11px 8px; border-radius: 11px; border: 1px solid var(--border);
+  font-size: 14px; font-weight: 550; color: var(--ink-2); background: var(--plane);
+}
+.seg button.on { background: var(--series); color: #fff; border-color: transparent; }
+
+/* ── Workout runner ─────────────────────────────────────────────────────── */
+#runner { position: fixed; inset: 0; background: var(--plane); z-index: 60; display: none;
+          overflow-y: auto; }
+#runner.on { display: block; }
+.run-inner { max-width: 560px; margin: 0 auto;
+             padding: max(16px, env(safe-area-inset-top)) 18px calc(30px + env(safe-area-inset-bottom)); }
+.run-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+.run-top .x { font-size: 15px; color: var(--ink-2); padding: 8px 4px; }
+.run-step { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.run-name { font-size: 27px; font-weight: 650; letter-spacing: -.025em; margin: 0 0 8px; }
+.run-cue { font-size: 15px; color: var(--ink-2); margin: 0 0 24px; line-height: 1.55; }
+.run-target { font-size: 15px; color: var(--series); font-weight: 600; margin-bottom: 22px; }
+
+.timer { text-align: center; padding: 18px 0 26px; }
+.timer .clock { font-size: 66px; font-weight: 300; letter-spacing: -.04em;
+                font-variant-numeric: tabular-nums; line-height: 1; }
+.timer .phase-l { font-size: 15px; font-weight: 600; margin-top: 10px; letter-spacing: .02em; }
+.timer .rounds { font-size: 13px; color: var(--muted); margin-top: 5px; font-variant-numeric: tabular-nums; }
+.ring { display: block; margin: 0 auto 4px; }
+
+.setgrid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; }
+.setbtn {
+  min-width: 62px; padding: 15px 10px; border-radius: 13px;
+  border: 1px solid var(--border); background: var(--surface);
+  font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+}
+.setbtn .sl { font-size: 10.5px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.setbtn.done { background: var(--series); color: #fff; border-color: transparent; }
+.setbtn.done .sl { color: rgba(255,255,255,.75); }
+
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+           overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ══ TODAY ══════════════════════════════════════════════════════════ -->
+  <section class="screen on" id="s-today">
+    <h1 id="greet">Today</h1>
+    <p class="sub" id="todayDate"></p>
+    <div id="todayBody"></div>
+  </section>
+
+  <!-- ══ LOG ════════════════════════════════════════════════════════════ -->
+  <section class="screen" id="s-log">
+    <h1>Log</h1>
+    <p class="sub">Anything you did — planned or not.</p>
+    <div class="btn-row" style="margin-bottom:6px">
+      <button class="btn" onclick="openLogWorkout()">+ Workout</button>
+      <button class="btn ghost" onclick="openLogWeight()">+ Weight</button>
+    </div>
+    <h2>History</h2>
+    <div class="card flat" id="history"></div>
+  </section>
+
+  <!-- ══ PROGRESS ═══════════════════════════════════════════════════════ -->
+  <section class="screen" id="s-progress">
+    <h1>Progress</h1>
+    <p class="sub">The proof you're showing up.</p>
+    <div id="progressBody"></div>
+  </section>
+
+  <!-- ══ PLAN ═══════════════════════════════════════════════════════════ -->
+  <section class="screen" id="s-plan">
+    <h1>The plan</h1>
+    <p class="sub">12 weeks, 3 days a week. It waits for you — miss a day and nothing is lost.</p>
+    <div id="planBody"></div>
+    <h2>Settings</h2>
+    <div class="card">
+      <label class="f">
+        <span>Units</span>
+        <div class="seg" id="unitSeg">
+          <button onclick="setUnits('imperial')">lb / miles</button>
+          <button onclick="setUnits('metric')">kg / km</button>
+        </div>
+      </label>
+      <div class="btn-row">
+        <button class="btn ghost sm" onclick="exportData()">Export backup</button>
+        <button class="btn ghost sm" onclick="importData()">Import</button>
+      </div>
+      <p class="card-meta" style="margin-top:12px">
+        Your data lives only on this device. Export now and then so a lost phone
+        doesn't lose your history.
+      </p>
+    </div>
+  </section>
+
+</div>
+
+<!-- ══ TAB BAR ═════════════════════════════════════════════════════════ -->
+<nav id="tabs">
+  <button class="tab on" data-go="today">
+    <svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
+    Today
+  </button>
+  <button class="tab" data-go="log">
+    <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+    Log
+  </button>
+  <button class="tab" data-go="progress">
+    <svg viewBox="0 0 24 24"><path d="M3 20h18"/><path d="M6 20v-6M11 20V8M16 20v-9M21 20V5"/></svg>
+    Progress
+  </button>
+  <button class="tab" data-go="plan">
+    <svg viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M8 3v3M16 3v3M3.5 10h17"/></svg>
+    Plan
+  </button>
+</nav>
+
+<!-- ══ SHEET ═══════════════════════════════════════════════════════════ -->
+<div id="veil" onclick="if(event.target===this)closeSheet()">
+  <div class="sheet" id="sheet"></div>
+</div>
+
+<!-- ══ WORKOUT RUNNER ══════════════════════════════════════════════════ -->
+<div id="runner"><div class="run-inner" id="runBody"></div></div>
+
+<script>
+"use strict";
+
+/* ═══════════════════════════════════════════════════════════════════════
+   1. THE PROGRAM
+   12 weeks · 3 days/week · bodyweight + outdoor · sedentary start.
+
+   Two ideas drive the design:
+   · Start almost embarrassingly easy. Quitting in week 3 from soreness is
+     the single most common way a beginner plan fails.
+   · Progress on effort completed, not on the calendar. Miss two weeks and
+     you resume exactly where you stopped — see currentWeek().
+   ══════════════════════════════════════════════════════════════════════ */
+
+const PHASES = [
+  { name: "Foundation", weeks: [1,2,3],
+    blurb: "Build the habit before you build the fitness. These sessions should feel easy — that's on purpose." },
+  { name: "Build", weeks: [4,5,6,7],
+    blurb: "Jogging enters, in short intervals. Strength moves get harder and volume goes up." },
+  { name: "Progress", weeks: [8,9,10,11,12],
+    blurb: "Longer runs, harder movements. By week 12 you'll jog 20 minutes without stopping." },
+];
+
+const phaseOf = w => w <= 3 ? 0 : w <= 7 ? 1 : 2;
+
+// Each move carries three progressions — one per phase — plus sets × reps.
+const DAY_A = {
+  title: "Strength A",
+  focus: "Push & core",
+  moves: [
+    { name: ["Wall push-up", "Incline push-up", "Knee push-up"],
+      cue: "Hands a bit wider than shoulders. Lower slowly — three seconds down — and keep your body one straight line from head to heels.",
+      sets: [2,3,3], reps: [8,10,12] },
+    { name: ["Sit-to-stand squat", "Bodyweight squat", "Tempo squat"],
+      cue: "Sit back onto a chair, tap it lightly, stand up. Knees track over your toes; chest stays proud.",
+      sets: [2,3,3], reps: [8,12,12] },
+    { name: ["Glute bridge", "Glute bridge (2s hold)", "Single-leg glute bridge"],
+      cue: "Lie on your back, feet flat. Squeeze your glutes to lift your hips — the work is in the glutes, not the lower back.",
+      sets: [2,3,3], reps: [10,12,8] },
+    { name: ["Dead bug", "Forearm plank", "Forearm plank"],
+      cue: "Brace like you're about to be poked in the stomach. Slow and controlled beats fast and sloppy.",
+      sets: [2,3,3], reps: [8,20,40], hold: [false,true,true] },
+  ],
+};
+
+const DAY_B = {
+  title: "Strength B",
+  focus: "Legs & pull",
+  moves: [
+    { name: ["Assisted split squat", "Split squat", "Reverse lunge"],
+      cue: "One foot forward, one back. Drop straight down, not forward. Hold a wall for balance as long as you need it.",
+      sets: [2,3,3], reps: [6,8,10] },
+    { name: ["Doorway row", "Towel row", "Table row"],
+      cue: "Grip a sturdy doorframe, lean back with straight arms, pull your chest toward your hands. Squeeze the shoulder blades.",
+      sets: [2,3,3], reps: [8,10,12] },
+    { name: ["Hip hinge", "Hip hinge (slow)", "Single-leg deadlift"],
+      cue: "Push your hips back like you're closing a car door with them. Back stays flat — this is not a squat.",
+      sets: [2,3,3], reps: [10,12,10] },
+    { name: ["Side plank (knees)", "Side plank (knees)", "Side plank"],
+      cue: "Stack your shoulders and hips. Lift your hips until your body is one straight line. Each side.",
+      sets: [2,2,3], reps: [15,25,30], hold: [true,true,true] },
+    { name: ["Calf raise", "Step-up", "Step-up"],
+      cue: "Slow up, slower down. Full range — heels all the way down at the bottom.",
+      sets: [2,3,3], reps: [12,10,12] },
+  ],
+};
+
+// Walk-to-run ladder. Weeks 1–3 are walking only — a sedentary body needs
+// a few weeks of load before jogging stops being a joint risk.
+const CARDIO = {
+  1:  { kind:"steady",   min:20, label:"Brisk walk",
+        desc:"Brisk enough that talking takes a little effort, easy enough that you could still hold a conversation." },
+  2:  { kind:"steady",   min:25, label:"Brisk walk",
+        desc:"Same effort, five more minutes. If it feels easy, that's the plan working." },
+  3:  { kind:"steady",   min:30, label:"Brisk walk",
+        desc:"Last walking-only week. Find a route you actually enjoy — you'll be running it soon." },
+  4:  { kind:"interval", warm:5, rounds:6, jog:60,  walk:120, cool:5, label:"First jog intervals",
+        desc:"One minute of jogging at a pace you could sustain for ten. Slower than you think." },
+  5:  { kind:"interval", warm:5, rounds:8, jog:60,  walk:90,  cool:5, label:"Jog intervals",
+        desc:"Two more rounds, shorter walks. Keep the jog pace conversational." },
+  6:  { kind:"interval", warm:5, rounds:6, jog:90,  walk:120, cool:5, label:"Jog intervals",
+        desc:"Ninety-second jogs. If you're gasping, slow down — pace is not the goal yet." },
+  7:  { kind:"interval", warm:5, rounds:6, jog:120, walk:120, cool:5, label:"Jog intervals",
+        desc:"Two minutes on, two minutes off. Even split for the first time." },
+  8:  { kind:"interval", warm:5, rounds:5, jog:180, walk:120, cool:5, label:"Longer intervals",
+        desc:"Three-minute jogs. The walk breaks are now shorter than the runs." },
+  9:  { kind:"interval", warm:5, rounds:4, jog:240, walk:120, cool:5, label:"Longer intervals",
+        desc:"Four minutes. You're running sixteen minutes total today — a month ago that was unthinkable." },
+  10: { kind:"interval", warm:5, rounds:4, jog:300, walk:120, cool:5, label:"Five-minute blocks",
+        desc:"Five-minute blocks. Settle into a rhythm and let your breathing lead." },
+  11: { kind:"interval", warm:5, rounds:3, jog:480, walk:120, cool:5, label:"Eight-minute blocks",
+        desc:"Eight minutes at a time. Almost there." },
+  12: { kind:"steady",   min:20, label:"20-minute continuous jog", run:true,
+        desc:"No walk breaks. Start slower than feels right — you have twenty minutes to spend, not five." },
+};
+
+const dayTemplate = idx => idx === 0 ? DAY_A : idx === 1 ? "cardio" : DAY_B;
+
+/* Build the concrete session for a given week (1–12) and day (0–2). */
+function session(week, dayIdx) {
+  const p = phaseOf(week);
+  const t = dayTemplate(dayIdx);
+  if (t === "cardio") {
+    const c = CARDIO[week];
+    return { type:"cardio", week, dayIdx, phase:p, title:c.label, desc:c.desc, cardio:c,
+             focus: c.kind === "interval" ? "Walk / jog intervals" : (c.run ? "Continuous jog" : "Walking") };
+  }
+  return {
+    type: "strength", week, dayIdx, phase: p, title: t.title, focus: t.focus,
+    desc: PHASES[p].blurb,
+    moves: t.moves.map(m => ({
+      name: m.name[p], cue: m.cue,
+      sets: m.sets[p], reps: m.reps[p],
+      hold: m.hold ? m.hold[p] : false,
+    })),
+  };
+}
+
+function sessionSummary(week, dayIdx) {
+  const s = session(week, dayIdx);
+  if (s.type === "cardio") {
+    const c = s.cardio;
+    return c.kind === "steady"
+      ? `${c.label} · ${c.min} min`
+      : `${c.rounds} × ${fmtDur(c.jog)} jog / ${fmtDur(c.walk)} walk`;
+  }
+  return `${s.title} · ${s.moves.length} moves`;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   2. STATE
+   ══════════════════════════════════════════════════════════════════════ */
+
+const KEY = "groundwork.v1";
+const blank = () => ({
+  version: 1,
+  started: today(),
+  units: "imperial",
+  workouts: [],      // {id, date, type, title, planWeek, planDay, duration, distance, moves[], note}
+  weights: [],       // {id, date, kg}
+  habits: {},        // 'YYYY-MM-DD': {moved:bool, ate:bool, slept:bool}
+});
+
+let S = load();
+
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (!raw) return blank();
+    return Object.assign(blank(), JSON.parse(raw));
+  } catch (e) {
+    console.warn("Could not read saved data — starting fresh.", e);
+    return blank();
+  }
+}
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(S)); }
+  catch (e) { alert("Couldn't save — your device may be out of storage."); }
+}
+
+/* Plan position advances with completed plan sessions, not the calendar. */
+const planDone = () => S.workouts.filter(w => w.planWeek).length;
+function currentWeek() { return Math.min(12, Math.floor(planDone() / 3) + 1); }
+function currentDay()  { return planDone() % 3; }
+const planFinished = () => planDone() >= 36;
+
+/* ═══════════════════════════════════════════════════════════════════════
+   3. HELPERS
+   ══════════════════════════════════════════════════════════════════════ */
+
+const $  = s => document.querySelector(s);
+const uid = () => Math.random().toString(36).slice(2, 10);
+
+function today() { return iso(new Date()); }
+function iso(d) {
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0")
+         + "-" + String(d.getDate()).padStart(2,"0");
+}
+function parseISO(s) { const [y,m,d] = s.split("-").map(Number); return new Date(y, m-1, d); }
+function addDays(d, n) { const c = new Date(d); c.setDate(c.getDate()+n); return c; }
+function daysBetween(a, b) { return Math.round((parseISO(b) - parseISO(a)) / 86400000); }
+
+function fmtDate(s) {
+  const d = parseISO(s), t = today();
+  if (s === t) return "Today";
+  if (s === iso(addDays(new Date(), -1))) return "Yesterday";
+  return d.toLocaleDateString(undefined, { month:"short", day:"numeric" });
+}
+function fmtDur(sec) {
+  if (sec < 60) return sec + "s";
+  const m = Math.floor(sec/60), s = sec % 60;
+  return s ? `${m}:${String(s).padStart(2,"0")}` : `${m} min`;
+}
+function clock(sec) {
+  const m = Math.floor(sec/60), s = sec % 60;
+  return `${m}:${String(s).padStart(2,"0")}`;
+}
+const esc = s => String(s).replace(/[&<>"']/g, c =>
+  ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+
+/* Units — stored canonically (kg, km), displayed per preference. */
+const metric = () => S.units === "metric";
+const wUnit  = () => metric() ? "kg" : "lb";
+const dUnit  = () => metric() ? "km" : "mi";
+const toDisplayW = kg => metric() ? kg : kg * 2.20462;
+const toStoreW   = v  => metric() ? v  : v / 2.20462;
+const toDisplayD = km => metric() ? km : km * 0.621371;
+const toStoreD   = v  => metric() ? v  : v / 0.621371;
+
+/* ═══════════════════════════════════════════════════════════════════════
+   4. STREAKS & STATS
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* A "week streak" — consecutive weeks with at least 2 sessions. Daily
+   streaks punish rest days, which a 3-day plan is built around. */
+function weekStreak() {
+  const byWeek = {};
+  S.workouts.forEach(w => {
+    const d = parseISO(w.date);
+    const monday = addDays(d, -((d.getDay() + 6) % 7));
+    byWeek[iso(monday)] = (byWeek[iso(monday)] || 0) + 1;
+  });
+  const now = new Date();
+  let cursor = addDays(now, -((now.getDay() + 6) % 7));
+  let streak = 0;
+  // The in-progress week only breaks the streak once it's over.
+  if ((byWeek[iso(cursor)] || 0) < 2) cursor = addDays(cursor, -7);
+  while ((byWeek[iso(cursor)] || 0) >= 2) { streak++; cursor = addDays(cursor, -7); }
+  return streak;
+}
+function thisWeekCount() {
+  const now = new Date();
+  const monday = iso(addDays(now, -((now.getDay() + 6) % 7)));
+  return S.workouts.filter(w => w.date >= monday).length;
+}
+function totalMinutes() { return S.workouts.reduce((a,w) => a + (w.duration||0), 0); }
+function totalDistance() { return S.workouts.reduce((a,w) => a + (w.distance||0), 0); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   5. NAVIGATION
+   ══════════════════════════════════════════════════════════════════════ */
+
+let screen = "today";
+document.querySelectorAll("#tabs .tab").forEach(b =>
+  b.addEventListener("click", () => go(b.dataset.go)));
+
+function go(name) {
+  screen = name;
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("on"));
+  $("#s-" + name).classList.add("on");
+  document.querySelectorAll("#tabs .tab").forEach(t =>
+    t.classList.toggle("on", t.dataset.go === name));
+  window.scrollTo(0, 0);
+  render();
+}
+
+function render() {
+  if (screen === "today")    renderToday();
+  if (screen === "log")      renderHistory();
+  if (screen === "progress") renderProgress();
+  if (screen === "plan")     renderPlan();
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   6. TODAY
+   ══════════════════════════════════════════════════════════════════════ */
+
+function renderToday() {
+  const h = new Date().getHours();
+  $("#greet").textContent = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+  $("#todayDate").textContent =
+    new Date().toLocaleDateString(undefined, { weekday:"long", month:"long", day:"numeric" });
+
+  const wk = currentWeek(), dy = currentDay();
+  const s = session(wk, dy);
+  const didToday = S.workouts.filter(w => w.date === today());
+  const streak = weekStreak();
+  const hab = S.habits[today()] || {};
+  let html = "";
+
+  // Stat tiles
+  html += `<div class="tiles">
+    <div class="tile"><div class="v">${streak}</div><div class="l">week streak</div></div>
+    <div class="tile"><div class="v">${thisWeekCount()}</div><div class="l">sessions this week</div></div>
+    <div class="tile"><div class="v">${planDone()}<span style="font-size:15px;color:var(--muted)">/36</span></div><div class="l">plan complete</div></div>
+  </div>`;
+
+  // The plan card
+  if (planFinished()) {
+    html += `<div class="plan-card">
+      <div class="eyebrow">Program complete</div>
+      <p class="plan-title">You finished all 12 weeks.</p>
+      <p class="plan-desc">Thirty-six sessions from a standing start. Keep logging freely,
+        or restart the plan at a harder starting point.</p>
+      <button class="btn ghost" onclick="restartPlan()">Restart the plan</button>
+    </div>`;
+  } else {
+    const doneToday = didToday.some(w => w.planWeek === wk && w.planDay === dy);
+    html += `<div class="plan-card">
+      <div class="eyebrow">Week ${wk} · Day ${dy+1} · ${PHASES[s.phase].name}</div>
+      <p class="plan-title">${esc(s.title)}</p>
+      <p class="plan-desc">${esc(s.desc)}</p>`;
+
+    if (s.type === "strength") {
+      html += `<ul class="ex-list">` + s.moves.map(m =>
+        `<li><span class="n">${esc(m.name)}</span><span class="r">${m.sets} × ${
+          m.hold ? m.reps + "s" : m.reps}</span></li>`).join("") + `</ul>`;
+    } else {
+      const c = s.cardio;
+      html += `<ul class="ex-list">`;
+      if (c.kind === "steady") {
+        html += `<li><span class="n">${c.run ? "Jog" : "Brisk walk"}</span><span class="r">${c.min} min</span></li>`;
+      } else {
+        html += `<li><span class="n">Warm-up walk</span><span class="r">${c.warm} min</span></li>
+                 <li><span class="n">Jog / walk × ${c.rounds}</span><span class="r">${fmtDur(c.jog)} / ${fmtDur(c.walk)}</span></li>
+                 <li><span class="n">Cool-down walk</span><span class="r">${c.cool} min</span></li>`;
+      }
+      html += `</ul>`;
+    }
+
+    html += doneToday
+      ? `<button class="btn soft" onclick="startRunner(${wk},${dy})">Done today · do it again</button>`
+      : `<button class="btn" onclick="startRunner(${wk},${dy})">Start this session</button>`;
+    html += `</div>`;
+  }
+
+  // Habits
+  html += `<h2>Today's basics</h2><div class="habits">
+    ${habitBtn("moved", "Moved", hab.moved)}
+    ${habitBtn("ate",   "Ate well", hab.ate)}
+    ${habitBtn("slept", "Slept 7h+", hab.slept)}
+  </div>`;
+
+  // What you already did today
+  if (didToday.length) {
+    html += `<h2>Logged today</h2><div class="card flat">` +
+      didToday.map(entryRow).join("") + `</div>`;
+  }
+
+  $("#todayBody").innerHTML = html;
+}
+
+const habitBtn = (k, label, on) =>
+  `<button class="habit${on ? " on" : ""}" onclick="toggleHabit('${k}')" aria-pressed="${!!on}">
+     <span class="dot">✓</span>${label}
+   </button>`;
+
+function toggleHabit(k) {
+  const d = today();
+  S.habits[d] = S.habits[d] || {};
+  S.habits[d][k] = !S.habits[d][k];
+  if (navigator.vibrate) navigator.vibrate(8);
+  save(); renderToday();
+}
+
+function restartPlan() {
+  if (!confirm("Restart the 12-week plan from week 1? Your logged history stays.")) return;
+  S.workouts.forEach(w => { delete w.planWeek; delete w.planDay; });
+  save(); render();
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   7. WORKOUT RUNNER
+   ══════════════════════════════════════════════════════════════════════ */
+
+let R = null;          // active run state
+let tick = null;       // interval handle
+
+function startRunner(week, dayIdx) {
+  const s = session(week, dayIdx);
+  R = { s, i: 0, done: {}, startedAt: Date.now(),
+        timer: null, running: false };
+  if (s.type === "cardio") R.timer = buildCardioTimer(s.cardio);
+  $("#runner").classList.add("on");
+  document.body.style.overflow = "hidden";
+  drawRunner();
+}
+
+function closeRunner(skipConfirm) {
+  if (!skipConfirm && !confirm("Leave this session? Nothing will be logged.")) return;
+  stopTick();
+  R = null;
+  $("#runner").classList.remove("on");
+  document.body.style.overflow = "";
+  render();
+}
+
+/* Flatten interval work into a simple queue of phases. */
+function buildCardioTimer(c) {
+  const q = [];
+  if (c.kind === "steady") {
+    q.push({ label: c.run ? "Jog" : "Brisk walk", sec: c.min * 60, kind: "work" });
+  } else {
+    q.push({ label: "Warm-up walk", sec: c.warm * 60, kind: "warm" });
+    for (let r = 0; r < c.rounds; r++) {
+      q.push({ label: "Jog",  sec: c.jog,  kind: "work", round: r + 1, of: c.rounds });
+      if (r < c.rounds - 1) q.push({ label: "Walk", sec: c.walk, kind: "rest", round: r + 1, of: c.rounds });
+    }
+    q.push({ label: "Cool-down walk", sec: c.cool * 60, kind: "cool" });
+  }
+  return { q, at: 0, left: q[0].sec, elapsed: 0 };
+}
+
+function drawRunner() {
+  if (!R) return;
+  const s = R.s;
+  let html = `<div class="run-top">
+      <button class="x" onclick="closeRunner()">✕ Close</button>
+      <span class="run-step">Week ${s.week} · Day ${s.dayIdx + 1}</span>
+    </div>`;
+
+  if (s.type === "strength") {
+    const m = s.moves[R.i];
+    const doneSets = R.done[R.i] || 0;
+    html += `<div class="run-step" style="margin-bottom:8px">Move ${R.i+1} of ${s.moves.length}</div>
+      <div class="run-name">${esc(m.name)}</div>
+      <p class="run-target">${m.sets} sets × ${m.hold ? m.reps + " seconds" : m.reps + " reps"}</p>
+      <p class="run-cue">${esc(m.cue)}</p>`;
+
+    if (m.hold) {
+      html += holdTimerHTML(m.reps);
+    }
+
+    html += `<div class="setgrid">` +
+      Array.from({length: m.sets}, (_, i) =>
+        `<button class="setbtn${i < doneSets ? " done" : ""}" onclick="toggleSet(${i})">
+           <span class="sl">Set ${i+1}</span>${m.hold ? m.reps + "s" : m.reps}
+         </button>`).join("") + `</div>`;
+
+    html += `<div class="btn-row">`;
+    if (R.i > 0) html += `<button class="btn ghost" onclick="moveStep(-1)">Back</button>`;
+    html += R.i < s.moves.length - 1
+      ? `<button class="btn" onclick="moveStep(1)">Next move</button>`
+      : `<button class="btn" onclick="finishRun()">Finish session</button>`;
+    html += `</div>`;
+
+  } else {
+    const t = R.timer, ph = t.q[t.at];
+    const total = ph.sec, frac = total ? (total - t.left) / total : 0;
+    html += `<div class="run-name" style="font-size:22px">${esc(s.title)}</div>
+      <p class="run-cue" style="margin-bottom:8px">${esc(s.desc)}</p>
+      <div class="timer">
+        ${ringSVG(frac, ph.kind)}
+        <div class="clock">${clock(t.left)}</div>
+        <div class="phase-l" style="color:${ph.kind === "work" ? "var(--series)" : "var(--ink-2)"}">${ph.label}</div>
+        <div class="rounds">${ph.round ? `Round ${ph.round} of ${ph.of} · ` : ""}${
+          clock(t.elapsed)} elapsed</div>
+      </div>
+      <div class="btn-row" style="margin-bottom:8px">
+        <button class="btn ${R.running ? "ghost" : ""}" onclick="toggleTick()">${R.running ? "Pause" : (t.elapsed ? "Resume" : "Start")}</button>
+        <button class="btn ghost" onclick="skipPhase()">Skip</button>
+      </div>
+      <button class="btn soft" onclick="finishRun()">Finish session</button>`;
+  }
+
+  $("#runBody").innerHTML = html;
+}
+
+/* A hold timer for planks — separate from the cardio queue. */
+let holdT = null;
+function holdTimerHTML(sec) {
+  const left = holdT ? holdT.left : sec;
+  return `<div class="timer" style="padding:6px 0 18px">
+      <div class="clock" style="font-size:48px">${clock(left)}</div>
+      <button class="btn ${holdT && holdT.on ? "ghost" : "soft"}" style="margin-top:12px"
+        onclick="toggleHold(${sec})">${holdT && holdT.on ? "Pause hold" : "Start hold"}</button>
+    </div>`;
+}
+function toggleHold(sec) {
+  if (holdT && holdT.on) { clearInterval(holdT.h); holdT.on = false; drawRunner(); return; }
+  holdT = holdT && holdT.left > 0 ? holdT : { left: sec, on: false, h: null };
+  holdT.on = true;
+  holdT.h = setInterval(() => {
+    holdT.left--;
+    if (holdT.left <= 0) {
+      clearInterval(holdT.h); holdT.on = false; holdT.left = 0;
+      beep(880, .25); if (navigator.vibrate) navigator.vibrate([120,60,120]);
+    }
+    drawRunner();
+  }, 1000);
+  drawRunner();
+}
+
+function ringSVG(frac, kind) {
+  const r = 54, c = 2 * Math.PI * r;
+  const col = kind === "work" ? "var(--series)" : "var(--axis)";
+  return `<svg class="ring" width="132" height="132" viewBox="0 0 132 132" aria-hidden="true">
+    <circle cx="66" cy="66" r="${r}" fill="none" stroke="var(--grid)" stroke-width="5"/>
+    <circle cx="66" cy="66" r="${r}" fill="none" stroke="${col}" stroke-width="5"
+      stroke-linecap="round" stroke-dasharray="${c}"
+      stroke-dashoffset="${c * (1 - frac)}" transform="rotate(-90 66 66)"/>
+  </svg>`;
+}
+
+function toggleSet(i) {
+  const cur = R.done[R.i] || 0;
+  R.done[R.i] = (i + 1 === cur) ? i : i + 1;   // tap the last done set to undo it
+  if (navigator.vibrate) navigator.vibrate(8);
+  drawRunner();
+}
+function moveStep(d) {
+  if (holdT) { clearInterval(holdT.h); holdT = null; }
+  R.i = Math.max(0, Math.min(R.s.moves.length - 1, R.i + d));
+  window.scrollTo(0, 0);
+  drawRunner();
+}
+
+function toggleTick() {
+  if (R.running) { stopTick(); }
+  else {
+    R.running = true;
+    tick = setInterval(() => {
+      const t = R.timer;
+      t.left--; t.elapsed++;
+      if (t.left <= 0) {
+        if (t.at < t.q.length - 1) {
+          t.at++; t.left = t.q[t.at].sec;
+          const work = t.q[t.at].kind === "work";
+          beep(work ? 880 : 520, .2);
+          if (navigator.vibrate) navigator.vibrate(work ? [140,70,140] : 110);
+        } else {
+          stopTick(); t.left = 0;
+          beep(880, .5); if (navigator.vibrate) navigator.vibrate([200,90,200,90,200]);
+        }
+      }
+      drawRunner();
+    }, 1000);
+  }
+  drawRunner();
+}
+function stopTick() { if (tick) clearInterval(tick); tick = null; if (R) R.running = false; }
+function skipPhase() {
+  const t = R.timer;
+  if (t.at < t.q.length - 1) { t.at++; t.left = t.q[t.at].sec; }
+  else { stopTick(); t.left = 0; }
+  drawRunner();
+}
+
+/* Short tone via Web Audio — no sound files to load. */
+let ac = null;
+function beep(freq, dur) {
+  try {
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.frequency.value = freq; o.type = "sine";
+    g.gain.setValueAtTime(.0001, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(.35, ac.currentTime + .02);
+    g.gain.exponentialRampToValueAtTime(.0001, ac.currentTime + dur);
+    o.connect(g); g.connect(ac.destination);
+    o.start(); o.stop(ac.currentTime + dur + .02);
+  } catch (e) { /* audio blocked — the vibration still fires */ }
+}
+
+function finishRun() {
+  const s = R.s;
+  const mins = Math.max(1, Math.round((Date.now() - R.startedAt) / 60000));
+  const w = {
+    id: uid(), date: today(), type: s.type, title: s.title,
+    planWeek: s.week, planDay: s.dayIdx, duration: mins, note: "",
+  };
+  if (s.type === "strength") {
+    w.moves = s.moves.map((m, i) => ({
+      name: m.name, target: m.sets, done: R.done[i] || 0,
+      reps: m.reps, hold: m.hold,
+    }));
+  } else {
+    // Timed work is the truth; fall back to wall-clock if the timer never ran.
+    w.duration = R.timer.elapsed > 0 ? Math.max(1, Math.round(R.timer.elapsed / 60)) : mins;
+    w.distance = null;
+  }
+  S.workouts.push(w);
+  S.habits[today()] = Object.assign({}, S.habits[today()], { moved: true });
+  save();
+  stopTick(); if (holdT) { clearInterval(holdT.h); holdT = null; }
+  R = null;
+  $("#runner").classList.remove("on");
+  document.body.style.overflow = "";
+
+  const wk = currentWeek();
+  celebrate(s, wk);
+}
+
+function celebrate(s, wk) {
+  const done = planDone();
+  let msg = "Logged. That's one more than yesterday.";
+  if (done === 1)  msg = "First session done. The hardest one is behind you.";
+  if (done === 3)  msg = "Week 1 complete. This is the part most people never reach.";
+  if (done === 9)  msg = "Three weeks in. Next week you start jogging.";
+  if (done === 18) msg = "Halfway. Look at the Progress tab — that's all you.";
+  if (done === 36) msg = "Twelve weeks. You just ran twenty minutes without stopping.";
+  openSheet(`
+    <div class="grab"></div>
+    <h3>Session complete</h3>
+    <p class="sub" style="margin-bottom:20px">${esc(msg)}</p>
+    <button class="btn" onclick="closeSheet(); go('today')">Done</button>
+  `);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   8. FREE LOGGING
+   ══════════════════════════════════════════════════════════════════════ */
+
+let sheetKind = null;
+
+function openSheet(html) { $("#sheet").innerHTML = html; $("#veil").classList.add("on"); }
+function closeSheet() { $("#veil").classList.remove("on"); sheetKind = null; }
+
+function openLogWorkout() {
+  sheetKind = "run";
+  openSheet(`
+    <div class="grab"></div>
+    <h3>Log a workout</h3>
+    <label class="f"><span>Type</span>
+      <div class="seg" id="typeSeg">
+        <button onclick="pickType('run')" class="on">Run</button>
+        <button onclick="pickType('walk')">Walk</button>
+        <button onclick="pickType('strength')">Strength</button>
+        <button onclick="pickType('other')">Other</button>
+      </div>
+    </label>
+    <label class="f"><span>Date</span>
+      <input class="in" type="date" id="wDate" value="${today()}" max="${today()}"></label>
+    <label class="f"><span>Duration (minutes)</span>
+      <input class="in" type="number" id="wMin" inputmode="numeric" min="1" max="600" placeholder="30"></label>
+    <label class="f" id="distField"><span>Distance (${dUnit()}) — optional</span>
+      <input class="in" type="number" id="wDist" inputmode="decimal" step="0.01" min="0" placeholder="2.5"></label>
+    <label class="f"><span>Note — optional</span>
+      <textarea class="in" id="wNote" placeholder="How did it feel?"></textarea></label>
+    <div class="btn-row">
+      <button class="btn ghost" onclick="closeSheet()">Cancel</button>
+      <button class="btn" onclick="saveWorkout()">Save</button>
+    </div>
+  `);
+}
+
+function pickType(t) {
+  sheetKind = t;
+  document.querySelectorAll("#typeSeg button").forEach((b, i) =>
+    b.classList.toggle("on", ["run","walk","strength","other"][i] === t));
+  $("#distField").style.display = (t === "run" || t === "walk") ? "block" : "none";
+}
+
+function saveWorkout() {
+  const min  = parseFloat($("#wMin").value);
+  const dist = parseFloat($("#wDist") ? $("#wDist").value : "");
+  const date = $("#wDate").value || today();
+  if (!min || min <= 0) { alert("How many minutes did it take?"); return; }
+  const titles = { run:"Run", walk:"Walk", strength:"Strength", other:"Workout" };
+  S.workouts.push({
+    id: uid(), date,
+    type: sheetKind === "strength" ? "strength" : sheetKind === "other" ? "other" : "cardio",
+    title: titles[sheetKind] || "Workout",
+    duration: Math.round(min),
+    distance: (dist && dist > 0) ? toStoreD(dist) : null,
+    note: $("#wNote").value.trim(),
+  });
+  S.habits[date] = Object.assign({}, S.habits[date], { moved: true });
+  save(); closeSheet(); render();
+}
+
+function openLogWeight() {
+  const last = S.weights.length ? S.weights[S.weights.length-1] : null;
+  openSheet(`
+    <div class="grab"></div>
+    <h3>Log your weight</h3>
+    <p class="sub" style="margin-bottom:18px">No goal, no target — just the trend.
+      Weigh in at the same time of day for a cleaner line.</p>
+    <label class="f"><span>Date</span>
+      <input class="in" type="date" id="gDate" value="${today()}" max="${today()}"></label>
+    <label class="f"><span>Weight (${wUnit()})</span>
+      <input class="in" type="number" id="gVal" inputmode="decimal" step="0.1" min="1"
+        placeholder="${last ? toDisplayW(last.kg).toFixed(1) : (metric() ? "70" : "155")}"></label>
+    <div class="btn-row">
+      <button class="btn ghost" onclick="closeSheet()">Cancel</button>
+      <button class="btn" onclick="saveWeight()">Save</button>
+    </div>
+  `);
+  setTimeout(() => $("#gVal").focus(), 120);
+}
+
+function saveWeight() {
+  const v = parseFloat($("#gVal").value);
+  if (!v || v <= 0) { alert("Enter a weight."); return; }
+  const date = $("#gDate").value || today();
+  S.weights = S.weights.filter(w => w.date !== date);   // one reading per day
+  S.weights.push({ id: uid(), date, kg: toStoreW(v) });
+  S.weights.sort((a,b) => a.date < b.date ? -1 : 1);
+  save(); closeSheet(); render();
+}
+
+function delItem(kind, id) {
+  if (!confirm("Delete this entry?")) return;
+  if (kind === "w") S.workouts = S.workouts.filter(x => x.id !== id);
+  else              S.weights  = S.weights.filter(x => x.id !== id);
+  save(); render();
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   9. HISTORY
+   ══════════════════════════════════════════════════════════════════════ */
+
+const ICONS = {
+  cardio:   `<path d="M13 4.5a1.6 1.6 0 1 0 0-.1"/><path d="M8 21l2.5-5.5L8 12l1-4 3.5-1.5 3 3 3 1"/><path d="M6.5 12.5 9 8"/><path d="M13.5 15.5 16 21"/>`,
+  strength: `<path d="M6.5 8v8M17.5 8v8M3.5 10v4M20.5 10v4M6.5 12h11"/>`,
+  other:    `<path d="M12 3v18M3 12h18"/>`,
+  weight:   `<path d="M12 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/><path d="M5 21 7 9h10l2 12z"/>`,
+};
+
+function entryRow(w) {
+  const bits = [];
+  if (w.duration) bits.push(w.duration + " min");
+  if (w.distance) bits.push(toDisplayD(w.distance).toFixed(2) + " " + dUnit());
+  if (w.planWeek) bits.push("Week " + w.planWeek);
+  if (w.note) bits.push(w.note.length > 30 ? w.note.slice(0,30) + "…" : w.note);
+  return `<div class="entry">
+    <div class="ic"><svg viewBox="0 0 24 24">${ICONS[w.type] || ICONS.other}</svg></div>
+    <div class="body">
+      <div class="t">${esc(w.title || "Workout")}</div>
+      <div class="m">${fmtDate(w.date)}${bits.length ? " · " + esc(bits.join(" · ")) : ""}</div>
+    </div>
+    <button class="del" onclick="delItem('w','${w.id}')" aria-label="Delete">×</button>
+  </div>`;
+}
+
+function renderHistory() {
+  const items = []
+    .concat(S.workouts.map(w => ({ d: w.date, kind: "w", o: w })))
+    .concat(S.weights.map(g => ({ d: g.date, kind: "g", o: g })))
+    .sort((a,b) => a.d < b.d ? 1 : a.d > b.d ? -1 : 0)
+    .slice(0, 80);
+
+  if (!items.length) {
+    $("#history").innerHTML =
+      `<p class="empty">Nothing logged yet.<br>Your first entry starts the line.</p>`;
+    return;
+  }
+  $("#history").innerHTML = items.map(it => {
+    if (it.kind === "w") return entryRow(it.o);
+    const g = it.o;
+    return `<div class="entry">
+      <div class="ic"><svg viewBox="0 0 24 24">${ICONS.weight}</svg></div>
+      <div class="body">
+        <div class="t">${toDisplayW(g.kg).toFixed(1)} ${wUnit()}</div>
+        <div class="m">${fmtDate(g.date)}</div>
+      </div>
+      <button class="del" onclick="delItem('g','${g.id}')" aria-label="Delete">×</button>
+    </div>`;
+  }).join("");
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   10. PROGRESS  —  charts
+   Single series throughout, so one blue carries every mark; the axis and
+   a table twin carry the values that aren't directly labelled.
+   ══════════════════════════════════════════════════════════════════════ */
+
+function renderProgress() {
+  const w = S.workouts;
+  let html = "";
+
+  if (!w.length && !S.weights.length) {
+    $("#progressBody").innerHTML =
+      `<p class="empty">No data yet.<br>Finish a session and this fills in.</p>`;
+    return;
+  }
+
+  // Hero — total minutes moved
+  const mins = totalMinutes();
+  html += `<div class="card">
+    <p class="card-meta">Total time moving</p>
+    <div class="hero">${mins >= 600 ? (mins/60).toFixed(1) : mins}<span class="hero-unit">${
+      mins >= 600 ? "hours" : "minutes"}</span></div>
+    <p class="card-meta" style="margin-top:8px">Across ${w.length} session${w.length===1?"":"s"}${
+      totalDistance() > 0 ? ` · ${toDisplayD(totalDistance()).toFixed(1)} ${dUnit()} covered` : ""}.</p>
+  </div>`;
+
+  // Consistency heatmap — 12 weeks
+  html += `<h2>Consistency</h2><div class="card">${heatmapHTML()}</div>`;
+
+  // Weight trend
+  if (S.weights.length >= 2) {
+    html += `<h2>Weight trend</h2><div class="card">${weightChartHTML()}</div>`;
+  } else if (S.weights.length === 1) {
+    html += `<h2>Weight</h2><div class="card">
+      <div class="hero">${toDisplayW(S.weights[0].kg).toFixed(1)}<span class="hero-unit">${wUnit()}</span></div>
+      <p class="card-meta" style="margin-top:8px">Log once more and the trend line appears.</p></div>`;
+  }
+
+  // Weekly minutes
+  if (w.length >= 2) html += `<h2>Minutes per week</h2><div class="card">${weeklyChartHTML()}</div>`;
+
+  // Longest jog milestone
+  const jogs = w.filter(x => x.planWeek && x.planDay === 1 && CARDIO[x.planWeek]);
+  if (jogs.length) {
+    const best = Math.max(...jogs.map(x => {
+      const c = CARDIO[x.planWeek];
+      return c.kind === "steady" ? (c.run ? c.min * 60 : 0) : c.jog;
+    }));
+    if (best > 0) {
+      const firstDay = S.workouts.map(x => x.date).sort()[0];
+      const wks = Math.max(1, Math.round(daysBetween(firstDay, today()) / 7));
+      html += `<h2>Longest unbroken jog</h2><div class="card">
+        <div class="hero">${best >= 60 ? Math.round(best/60) : best}<span class="hero-unit">${
+          best >= 60 ? "minutes" : "seconds"}</span></div>
+        <p class="card-meta" style="margin-top:8px">Up from nothing ${wks} week${
+          wks === 1 ? "" : "s"} ago.</p></div>`;
+    }
+  }
+
+  $("#progressBody").innerHTML = html;
+  wireCharts();
+}
+
+/* ── Heatmap: 12 weeks × 7 days, sequential blue in four bins ─────────── */
+function heatmapHTML() {
+  const days = 84;
+  const start = addDays(new Date(), -(days - 1));
+  // Monday-align the first column
+  const pad = (start.getDay() + 6) % 7;
+  const cells = [];
+  for (let i = 0; i < pad; i++) cells.push(`<i class="future" aria-hidden="true"></i>`);
+
+  const t = today();
+  const rows = [];
+  for (let i = 0; i < days; i++) {
+    const d = iso(addDays(start, i));
+    const outs = S.workouts.filter(x => x.date === d);
+    const hab  = S.habits[d] || {};
+    const habN = ["moved","ate","slept"].filter(k => hab[k]).length;
+    let lvl = 0;
+    if (outs.length >= 2) lvl = 3;
+    else if (outs.length === 1) lvl = 2;
+    else if (habN >= 1) lvl = 1;
+    const future = d > t;
+    if (!future && (outs.length || habN)) rows.push({ d, n: outs.length, habN });
+    const mins = outs.reduce((a,x) => a + (x.duration||0), 0);
+    cells.push(`<i class="${future ? "future" : "l" + lvl}" data-d="${d}" data-n="${
+      outs.length}" data-m="${mins}" data-h="${habN}"></i>`);
+  }
+
+  return `<div class="chart-wrap">
+      <div class="heat">${cells.join("")}</div>
+      <div class="tip" id="heatTip"></div>
+    </div>
+    <div class="legend">
+      <span>Less</span>
+      <i style="background:var(--seq-0)"></i><i style="background:var(--seq-1)"></i>
+      <i style="background:var(--seq-2)"></i><i style="background:var(--seq-3)"></i>
+      <span>More</span>
+      <span style="margin-left:auto">Last 12 weeks</span>
+    </div>
+    ${tableToggle("heatTbl")}
+    <div id="heatTbl" hidden>
+      <table class="data"><thead><tr><th>Date</th><th class="num">Sessions</th><th class="num">Basics</th></tr></thead>
+      <tbody>${rows.slice(-30).reverse().map(r =>
+        `<tr><td>${fmtDate(r.d)}</td><td class="num">${r.n}</td><td class="num">${r.habN}/3</td></tr>`
+      ).join("")}</tbody></table>
+    </div>`;
+}
+
+/* Axis ticks on round numbers — 175 / 180 / 185, never 176.4 / 181.9. */
+function niceTicks(lo, hi, want) {
+  const span = hi - lo;
+  if (!(span > 0)) return [{ v: lo, dp: 1 }];
+  const raw = span / want;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const n = raw / mag;
+  // Breakpoints lean toward the smaller step — rounding 5.3 up to 10 would
+  // leave a narrow range like 174–190 with a single gridline.
+  const step = (n <= 1.5 ? 1 : n <= 3 ? 2 : n <= 7 ? 5 : 10) * mag;
+  const dp = step < 1 ? Math.min(2, Math.ceil(-Math.log10(step))) : 0;
+  const out = [];
+  for (let v = Math.ceil(lo / step) * step; v <= hi + step * 1e-6; v += step) {
+    out.push({ v: +v.toFixed(6), dp });
+    if (out.length > 8) break;
+  }
+  return out;
+}
+
+/* ── Weight: 2px line, 10% area wash, endpoint dot + label ────────────── */
+function weightChartHTML() {
+  const pts = S.weights.slice(-60);
+  const W = 320, H = 130, PL = 34, PR = 40, PT = 12, PB = 22;
+  const vals = pts.map(p => toDisplayW(p.kg));
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  const span = hi - lo || 1;
+  lo -= span * .25; hi += span * .25;
+  const t0 = parseISO(pts[0].date).getTime();
+  const t1 = parseISO(pts[pts.length-1].date).getTime();
+  const dx = (t1 - t0) || 1;
+
+  const X = p => PL + ((parseISO(p.date).getTime() - t0) / dx) * (W - PL - PR);
+  const Y = v => PT + (1 - (v - lo) / (hi - lo)) * (H - PT - PB);
+
+  const d = pts.map((p,i) => (i ? "L" : "M") + X(p).toFixed(1) + " " + Y(vals[i]).toFixed(1)).join(" ");
+  const area = `${d} L${X(pts[pts.length-1]).toFixed(1)} ${H-PB} L${X(pts[0]).toFixed(1)} ${H-PB} Z`;
+
+  const ticks = niceTicks(lo, hi, 3).map(t => ({ v: t.v, dp: t.dp, y: Y(t.v) }));
+  const last = vals[vals.length-1];
+  const first = vals[0];
+  const delta = last - first;
+
+  return `<p class="card-meta" style="margin-bottom:2px">Weight, ${wUnit()} · last ${pts.length} readings</p>
+    <div class="chart-wrap">
+    <svg viewBox="0 0 ${W} ${H}" role="img"
+      aria-label="Weight trend, ${first.toFixed(1)} to ${last.toFixed(1)} ${wUnit()}">
+      ${ticks.map(t => `<line x1="${PL}" x2="${W-PR}" y1="${t.y.toFixed(1)}" y2="${t.y.toFixed(1)}"
+          stroke="var(--grid)" stroke-width="1"/>
+        <text class="tick" x="${PL-7}" y="${(t.y+3.5).toFixed(1)}" text-anchor="end">${t.v.toFixed(t.dp)}</text>`).join("")}
+      <path d="${area}" fill="var(--series)" opacity=".10"/>
+      <path d="${d}" fill="none" stroke="var(--series)" stroke-width="2"
+        stroke-linejoin="round" stroke-linecap="round"/>
+      <circle cx="${X(pts[pts.length-1]).toFixed(1)}" cy="${Y(last).toFixed(1)}" r="4.5"
+        fill="var(--series)" stroke="var(--surface)" stroke-width="2"/>
+      <text class="endlabel" x="${(X(pts[pts.length-1])+9).toFixed(1)}"
+        y="${(Y(last)+4).toFixed(1)}">${last.toFixed(1)}</text>
+      <text class="tick" x="${PL}" y="${H-6}">${fmtDate(pts[0].date)}</text>
+      <text class="tick" x="${W-PR}" y="${H-6}" text-anchor="end">${fmtDate(pts[pts.length-1].date)}</text>
+      <g id="wHit"></g>
+    </svg>
+    <div class="tip" id="wTip"></div>
+    </div>
+    <p class="card-meta" style="margin-top:10px">
+      ${delta === 0 ? "No change" : (delta < 0 ? "Down " : "Up ") + Math.abs(delta).toFixed(1) + " " + wUnit()}
+      since ${fmtDate(pts[0].date)}.</p>
+    ${tableToggle("wTbl")}
+    <div id="wTbl" hidden>
+      <table class="data"><thead><tr><th>Date</th><th class="num">${wUnit()}</th></tr></thead>
+      <tbody>${pts.slice().reverse().map((p,i) =>
+        `<tr><td>${fmtDate(p.date)}</td><td class="num">${toDisplayW(p.kg).toFixed(1)}</td></tr>`
+      ).join("")}</tbody></table>
+    </div>`;
+}
+
+/* ── Weekly minutes: columns, 4px rounded cap, 2px gap between bars ───── */
+function weeklyChartHTML() {
+  const byWeek = {};
+  S.workouts.forEach(w => {
+    const d = parseISO(w.date);
+    const monday = iso(addDays(d, -((d.getDay() + 6) % 7)));
+    byWeek[monday] = (byWeek[monday] || 0) + (w.duration || 0);
+  });
+  // Always the 12 weeks ending with this one, so the chart never drifts off
+  // the present no matter how long the history gets. Weeks with nothing
+  // logged are kept as zero — a gap is information.
+  const now = new Date();
+  const thisMonday = addDays(now, -((now.getDay() + 6) % 7));
+  const first = parseISO(Object.keys(byWeek).sort()[0]);
+  const data = [];
+  for (let i = 11; i >= 0; i--) {
+    const m = addDays(thisMonday, -7 * i);
+    if (m < first) continue;              // don't invent weeks before you began
+    data.push({ k: iso(m), v: byWeek[iso(m)] || 0 });
+  }
+  if (!data.length) data.push({ k: iso(thisMonday), v: 0 });
+  const max = Math.max(...data.map(d => d.v), 30);
+
+  const W = 320, H = 128, PL = 30, PR = 6, PT = 10, PB = 20;
+  const band = (W - PL - PR) / data.length;
+  const bw = Math.min(24, band - 2);          // cap thickness, leave air
+  const base = H - PB;
+
+  const bars = data.map((d, i) => {
+    const x = PL + i * band + (band - bw) / 2;
+    const h = d.v ? Math.max(3, (d.v / max) * (base - PT)) : 0;
+    if (!h) return "";
+    const r = Math.min(4, h);
+    // rounded top, square at the baseline
+    return `<path d="M${x.toFixed(1)} ${base} L${x.toFixed(1)} ${(base-h+r).toFixed(1)}
+      Q${x.toFixed(1)} ${(base-h).toFixed(1)} ${(x+r).toFixed(1)} ${(base-h).toFixed(1)}
+      L${(x+bw-r).toFixed(1)} ${(base-h).toFixed(1)}
+      Q${(x+bw).toFixed(1)} ${(base-h).toFixed(1)} ${(x+bw).toFixed(1)} ${(base-h+r).toFixed(1)}
+      L${(x+bw).toFixed(1)} ${base} Z" fill="var(--series)"
+      data-k="${d.k}" data-v="${d.v}" class="bar"/>`;
+  }).join("");
+
+  const ticks = [0, max/2, max].map(v => ({ v, y: base - (v/max) * (base - PT) }));
+
+  return `<p class="card-meta" style="margin-bottom:2px">Minutes moved per week · last ${data.length} weeks</p>
+    <div class="chart-wrap">
+    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Minutes moved per week">
+      ${ticks.map(t => `<line x1="${PL}" x2="${W-PR}" y1="${t.y.toFixed(1)}" y2="${t.y.toFixed(1)}"
+        stroke="var(--grid)" stroke-width="1"/>
+        <text class="tick" x="${PL-6}" y="${(t.y+3.5).toFixed(1)}" text-anchor="end">${Math.round(t.v)}</text>`).join("")}
+      <line x1="${PL}" x2="${W-PR}" y1="${base}" y2="${base}" stroke="var(--axis)" stroke-width="1"/>
+      ${bars}
+      <text class="tick" x="${PL}" y="${H-5}">${fmtDate(data[0].k)}</text>
+      <text class="tick" x="${W-PR}" y="${H-5}" text-anchor="end">This week</text>
+    </svg>
+    <div class="tip" id="kTip"></div>
+    </div>
+    ${tableToggle("kTbl")}
+    <div id="kTbl" hidden>
+      <table class="data"><thead><tr><th>Week of</th><th class="num">Minutes</th></tr></thead>
+      <tbody>${data.slice().reverse().map(d =>
+        `<tr><td>${fmtDate(d.k)}</td><td class="num">${d.v}</td></tr>`).join("")}</tbody></table>
+    </div>`;
+}
+
+const tableToggle = id =>
+  `<button class="toggle-table" onclick="toggleTable('${id}', this)"
+     aria-expanded="false" aria-controls="${id}">Show data table</button>`;
+
+function toggleTable(id, btn) {
+  const el = document.getElementById(id);
+  const open = el.hasAttribute("hidden");
+  if (open) el.removeAttribute("hidden"); else el.setAttribute("hidden", "");
+  btn.textContent = open ? "Hide data table" : "Show data table";
+  btn.setAttribute("aria-expanded", open);
+}
+
+/* Hover/tap readouts. Hit targets are the cells and bars themselves —
+   both are already well above the 24px minimum on a phone. */
+function wireCharts() {
+  const heat = document.querySelector(".heat");
+  const hTip = $("#heatTip");
+  if (heat && hTip) {
+    heat.querySelectorAll("i[data-d]").forEach(cell => {
+      const show = () => {
+        const n = +cell.dataset.n, m = +cell.dataset.m, h = +cell.dataset.h;
+        hTip.innerHTML = `<b>${fmtDate(cell.dataset.d)}</b><br>` +
+          (n ? `${n} session${n>1?"s":""}${m ? ` · ${m} min` : ""}` : "Rest day") +
+          `<span class="d"><br>${h}/3 basics</span>`;
+        const r = cell.getBoundingClientRect(), p = heat.parentElement.getBoundingClientRect();
+        hTip.style.left = Math.max(0, Math.min(p.width - 130, r.left - p.left - 55)) + "px";
+        hTip.style.top  = (r.top - p.top - 62) + "px";
+        hTip.style.opacity = 1;
+      };
+      cell.addEventListener("mouseenter", show);
+      cell.addEventListener("touchstart", show, { passive: true });
+      cell.addEventListener("mouseleave", () => hTip.style.opacity = 0);
+    });
+    heat.parentElement.addEventListener("touchend", () => setTimeout(() => hTip.style.opacity = 0, 1400));
+  }
+
+  const kTip = $("#kTip");
+  if (kTip) {
+    document.querySelectorAll("path.bar").forEach(bar => {
+      const show = () => {
+        kTip.innerHTML = `<b>${bar.dataset.v} min</b><span class="d"><br>week of ${fmtDate(bar.dataset.k)}</span>`;
+        const r = bar.getBoundingClientRect(), p = kTip.parentElement.getBoundingClientRect();
+        kTip.style.left = Math.max(0, Math.min(p.width - 120, r.left - p.left - 40)) + "px";
+        kTip.style.top  = Math.max(0, r.top - p.top - 52) + "px";
+        kTip.style.opacity = 1;
+      };
+      bar.addEventListener("mouseenter", show);
+      bar.addEventListener("touchstart", show, { passive: true });
+      bar.addEventListener("mouseleave", () => kTip.style.opacity = 0);
+    });
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   11. PLAN OVERVIEW
+   ══════════════════════════════════════════════════════════════════════ */
+
+function renderPlan() {
+  const cw = currentWeek();
+  let html = "";
+  PHASES.forEach(p => {
+    html += `<div class="phase">
+      <h2 style="margin-top:18px">${p.name} · weeks ${p.weeks[0]}–${p.weeks[p.weeks.length-1]}</h2>
+      <p class="phase-blurb">${esc(p.blurb)}</p>`;
+    p.weeks.forEach(w => {
+      const state = w < cw ? "done" : w === cw ? "now" : "";
+      html += `<button class="wk ${state}" onclick="showWeek(${w})">
+        <span class="num">Week ${w}</span>
+        <span class="what">${esc(sessionSummary(w,1))}</span>
+        <span class="chev">›</span>
+      </button>`;
+    });
+    html += `</div>`;
+  });
+  $("#planBody").innerHTML = html;
+
+  document.querySelectorAll("#unitSeg button").forEach((b,i) =>
+    b.classList.toggle("on", ["imperial","metric"][i] === S.units));
+}
+
+function showWeek(w) {
+  let html = `<div class="grab"></div><h3>Week ${w} · ${PHASES[phaseOf(w)].name}</h3>`;
+  for (let d = 0; d < 3; d++) {
+    const s = session(w, d);
+    html += `<div class="card flat" style="margin-bottom:10px;border:1px solid var(--border)">
+      <p class="card-title">Day ${d+1} · ${esc(s.title)}</p>
+      <p class="card-meta" style="margin-bottom:10px">${esc(s.focus)}</p>`;
+    if (s.type === "strength") {
+      html += `<ul class="ex-list">` + s.moves.map(m =>
+        `<li><span class="n">${esc(m.name)}</span><span class="r">${m.sets} × ${
+          m.hold ? m.reps + "s" : m.reps}</span></li>`).join("") + `</ul>`;
+    } else {
+      const c = s.cardio;
+      html += `<p style="font-size:14.5px;color:var(--ink-2);margin:0">${esc(c.desc)}</p>`;
+    }
+    html += `</div>`;
+  }
+  html += `<button class="btn ghost" onclick="closeSheet()">Close</button>`;
+  openSheet(html);
+}
+
+function setUnits(u) { S.units = u; save(); render(); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   12. BACKUP
+   ══════════════════════════════════════════════════════════════════════ */
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(S, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = `groundwork-backup-${today()}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+function importData() {
+  const inp = document.createElement("input");
+  inp.type = "file"; inp.accept = "application/json,.json";
+  inp.onchange = () => {
+    const f = inp.files[0];
+    if (!f) return;
+    const fr = new FileReader();
+    fr.onload = () => {
+      try {
+        const d = JSON.parse(fr.result);
+        if (!d || !Array.isArray(d.workouts)) throw new Error("Not a Groundwork backup");
+        if (!confirm("Replace all current data with this backup?")) return;
+        S = Object.assign(blank(), d);
+        save(); render();
+        alert("Backup restored.");
+      } catch (e) { alert("Couldn't read that file: " + e.message); }
+    };
+    fr.readAsText(f);
+  };
+  inp.click();
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   13. BOOT
+   ══════════════════════════════════════════════════════════════════════ */
+
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  window.addEventListener("load", () =>
+    navigator.serviceWorker.register("sw.js").catch(() => {}));
+}
+
+// Keep the screen awake during a session, where supported.
+let wake = null;
+document.addEventListener("visibilitychange", async () => {
+  if (document.visibilityState === "visible" && R && "wakeLock" in navigator) {
+    try { wake = await navigator.wakeLock.request("screen"); } catch (e) {}
+  }
+});
+
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+# Exported data backups — these contain your personal history.
+# Never let one land in a public repo.
+groundwork-backup-*.json
+
+# Scratch copies used for testing/screenshots
+_preview-*.html
