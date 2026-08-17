@@ -27,28 +27,32 @@ Stop it with Ctrl+C.
 
 ## Get it onto your phone
 
-**To try it now:** open the `192.168.x.x` address on your phone while
-`server.py` is running. On iPhone use Share → *Add to Home Screen*; on Android
-use the ⋮ menu → *Add to Home screen*. You get an icon and a fullscreen app.
+**It's live here:**
 
-The catch: this only works at home with your PC on, and offline mode won't
-work. Browsers only allow offline caching (service workers) over HTTPS.
+### https://nkrumm22.github.io/groundwork/
 
-**For daily use, host it.** Any free static host gives you an HTTPS URL that
-works anywhere, with offline support and no PC running:
+Open that on your phone and install it:
+
+- **iPhone** — Safari → Share → *Add to Home Screen*
+- **Android** — Chrome → ⋮ → *Install app*
+
+You get an icon, a fullscreen app with no browser bars, and full offline
+support. Your PC does not need to be on.
+
+`server.py` is still useful for developing — edits show up instantly without
+pushing.
+
+### Publishing a change
 
 ```
-cd C:\Users\nkrum\fitness
-git init
-git add .
-git commit -m "Groundwork"
-gh repo create groundwork --public --source=. --push
+git add -A
+git commit -m "what changed"
+git push
 ```
 
-Then in the repo's **Settings → Pages**, set Source to `main` / root. A minute
-later it's live at `https://<your-username>.github.io/groundwork/`. Open that on
-your phone and add it to your home screen. Push a change, and the phone picks
-it up on next open.
+GitHub rebuilds in under a minute. The phone picks it up next time you open the
+app (`sw.js` serves the page network-first, so you get the new version as soon
+as you have a connection, and the cached one when you don't).
 
 ---
 
