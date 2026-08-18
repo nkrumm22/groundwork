@@ -59,11 +59,27 @@ as you have a connection, and the cached one when you don't).
 ## Your data
 
 Everything lives in your phone's `localStorage` — nothing is uploaded anywhere,
-and there is no account. Two consequences:
+and there is no account.
 
-- **The phone copy and the PC copy are separate.** They don't sync.
-- **Clearing browser data erases your history.** Use *Plan → Export backup*
-  every so often; *Import* restores it.
+**Storage is per-origin.** `https://nkrumm22.github.io/...` and
+`http://192.168.x.x:4100` are different origins with completely separate data.
+Logging on one and looking on the other shows an empty app. *Plan → Storage &
+diagnostics* prints which one you're actually running from.
+
+### What protects your history
+
+| | |
+|---|---|
+| **Durable storage** | The app calls `navigator.storage.persist()` on launch, asking the browser not to evict it. iOS otherwise clears script-writable storage after about a week of not opening a site. |
+| **Rolling backup** | Every save copies the previous record to `groundwork.v1.bak`. *Restore backup* in the storage panel brings it back. |
+| **Empty-write refusal** | `save()` will not replace a record that has data with an empty one. That combination only happens when a load failed, and writing it would make the loss permanent. |
+| **Nothing is discarded** | If a record can't be parsed it's preserved verbatim under `groundwork.v1.unreadable` and the backup is loaded instead. It used to log to the console and start blank. |
+| **Interrupted sessions** | The runner stashes its position on every change, so closing the app mid-workout no longer throws the session away. Reopening offers to pick it back up. |
+| **Flush on close** | `save()` runs on `pagehide` and whenever the app is hidden. |
+
+**None of that survives you clearing website data, and eviction is never fully
+ruled out.** Export a backup now and then — the storage panel shows how long
+it's been. That file is the only copy that lives outside the browser.
 
 ---
 

@@ -340,6 +340,10 @@ table.data th, table.data td { text-align: left; padding: 7px 4px; border-bottom
 table.data th { color: var(--muted); font-weight: 550; font-size: 12px; }
 table.data td.num { text-align: right; font-variant-numeric: tabular-nums; }
 
+.warn-note { background: color-mix(in srgb, var(--warn) 16%, transparent);
+              border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent);
+              border-radius: 11px; padding: 12px 13px; margin: 0 0 16px;
+              font-size: 13.5px; line-height: 1.5; color: var(--ink); }
 .empty { color: var(--muted); font-size: 14px; text-align: center; padding: 26px 10px; line-height: 1.55; }
 
 /* ── History list ───────────────────────────────────────────────────────── */
@@ -521,6 +525,8 @@ textarea.in { min-height: 74px; resize: vertical; }
         <button class="btn ghost sm" onclick="exportData()">Export backup</button>
         <button class="btn ghost sm" onclick="importData()">Import</button>
       </div>
+      <button class="btn ghost sm" style="width:100%;margin-top:8px"
+        onclick="storagePanel()">Storage &amp; diagnostics</button>
       <p class="card-meta" style="margin-top:12px">
         Your data lives only on this device. Export now and then so a lost phone
         doesn't lose your history.
@@ -704,33 +710,127 @@ function sessionSummary(week, dayIdx) {
    2. STATE
    ══════════════════════════════════════════════════════════════════════ */
 
-const KEY = "groundwork.v1";
+const KEY   = "groundwork.v1";
+const BAK   = "groundwork.v1.bak";      // the previous good snapshot
+const STAMP = "groundwork.v1.saved";    // when we last wrote successfully
+const EXPORTED = "groundwork.v1.exported";  // when a backup file was last taken
+
 const blank = () => ({
   version: 1,
   started: today(),
   units: "imperial",
   workouts: [],      // {id, date, type, title, planWeek, planDay, duration, distance, moves[], note}
   weights: [],       // {id, date, kg}
-  habits: {},        // 'YYYY-MM-DD': {moved:bool, ate:bool, slept:bool}
+  habits: {},        // 'YYYY-MM-DD': {moved:bool, slept:bool}
   food: {},          // 'YYYY-MM-DD': {veg, protein, water, cooked, out}
   foodGoals: {},     // per-metric overrides of the FOOD defaults
 });
 
-let S = load();
+/* Anything the user would be upset to lose. Used to refuse writes that
+   would replace a real record with an empty one. */
+function isEmpty(st) {
+  return !(st.workouts || []).length
+      && !(st.weights  || []).length
+      && !Object.keys(st.food   || {}).length
+      && !Object.keys(st.habits || {}).length;
+}
+
+let storeNote = null;   // surfaced in Settings when something went wrong
+
+function parseState(raw) {
+  const o = JSON.parse(raw);
+  if (!o || typeof o !== "object" || !Array.isArray(o.workouts))
+    throw new Error("not a Groundwork record");
+  return Object.assign(blank(), o);
+}
 
 function load() {
+  const raw = localStorage.getItem(KEY);
+  if (raw) {
+    try { return parseState(raw); }
+    catch (e) {
+      // Never discard an unreadable record. Keep it verbatim so it can be
+      // rescued by hand, then fall through to the backup.
+      try { localStorage.setItem(KEY + ".unreadable", raw); } catch (_) {}
+      storeNote = "Your saved data could not be read. A copy was kept and the backup was loaded instead.";
+    }
+  }
+  const bak = localStorage.getItem(BAK);
+  if (bak) {
+    try {
+      const st = parseState(bak);
+      storeNote = storeNote || "Loaded from the automatic backup.";
+      return st;
+    } catch (e) { /* the backup is no good either */ }
+  }
+  if (raw && !storeNote) storeNote = "Saved data could not be read.";
+  return blank();
+}
+
+let S = load();
+
+function save() {
   try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return blank();
-    return Object.assign(blank(), JSON.parse(raw));
+    const next = JSON.stringify(S);
+    const prev = localStorage.getItem(KEY);
+
+    // Refuse to replace a real record with an empty one. That combination
+    // only arises when a load failed, and writing it makes the loss final.
+    if (prev && isEmpty(S)) {
+      let prevHadData = false;
+      try { prevHadData = !isEmpty(parseState(prev)); } catch (e) {}
+      if (prevHadData) {
+        storeNote = "Refused to overwrite your saved data with an empty record. "
+                  + "Close and reopen the app before logging anything else.";
+        console.warn(storeNote);
+        return;
+      }
+    }
+
+    if (prev && prev.length > 40 && prev !== next) localStorage.setItem(BAK, prev);
+    localStorage.setItem(KEY, next);
+    localStorage.setItem(STAMP, String(Date.now()));
   } catch (e) {
-    console.warn("Could not read saved data — starting fresh.", e);
-    return blank();
+    alert("Couldn't save - your device may be out of storage.");
   }
 }
-function save() {
-  try { localStorage.setItem(KEY, JSON.stringify(S)); }
-  catch (e) { alert("Couldn't save — your device may be out of storage."); }
+
+/* Ask the browser to stop treating our storage as disposable. Without this
+   iOS clears script-writable storage after about a week, which reads to the
+   user as the app having forgotten everything. */
+async function askPersistence() {
+  try {
+    if (!navigator.storage || !navigator.storage.persist) return;
+    if (await navigator.storage.persisted()) return;
+    await navigator.storage.persist();
+  } catch (e) { /* not supported; nothing to do */ }
+}
+
+/* In-progress session. The runner used to hold everything in memory and
+   only write on Finish, so closing the app mid-workout threw it away. */
+
+const RUNKEY = "groundwork.v1.session";
+
+function saveRun() {
+  if (!R) { clearRun(); return; }
+  try {
+    localStorage.setItem(RUNKEY, JSON.stringify({
+      week: R.s.week, dayIdx: R.s.dayIdx, i: R.i, done: R.done,
+      startedAt: R.startedAt, rest: R.rest,
+      timer: R.timer ? { at: R.timer.at, left: R.timer.left,
+                         endsAt: R.timer.endsAt, over: R.timer.over } : null,
+    }));
+  } catch (e) { /* out of space; a session is not worth an alert */ }
+}
+function clearRun() { try { localStorage.removeItem(RUNKEY); } catch (e) {} }
+
+function pendingRun() {
+  try {
+    const p = JSON.parse(localStorage.getItem(RUNKEY) || "null");
+    if (!p || typeof p.week !== "number" || typeof p.dayIdx !== "number") return null;
+    if (!(p.startedAt > 0)) return null;
+    return p;
+  } catch (e) { return null; }
 }
 
 /* Plan position advances with completed plan sessions, not the calendar. */
@@ -958,6 +1058,135 @@ function toggleHabit(k) {
   save(); renderToday();
 }
 
+
+/* ── Picking a session back up ───────────────────────────────────────────
+   Restored paused, never mid-run: silently resuming a timer that has been
+   sitting for who-knows-how-long would be worse than asking.          */
+
+function offerResume() {
+  const p = pendingRun();
+  if (!p) return;
+  // A session from yesterday is not one you're still in the middle of.
+  if (Date.now() - p.startedAt > 12 * 3600 * 1000) { clearRun(); return; }
+  const s = session(p.week, p.dayIdx);
+  const ago = Math.max(1, Math.round((Date.now() - p.startedAt) / 60000));
+  const doneSets = Object.values(p.done || {}).reduce((a, b) => a + b, 0);
+
+  openSheet(`
+    <div class="grab"></div>
+    <h3>You were partway through</h3>
+    <p class="sub" style="margin-bottom:18px">
+      ${esc(s.title)} — week ${p.week}, day ${p.dayIdx + 1}. Started ${ago} minute${
+        ago === 1 ? "" : "s"} ago${doneSets ? `, ${doneSets} set${doneSets === 1 ? "" : "s"} logged` : ""}.
+    </p>
+    <div class="btn-row">
+      <button class="btn" onclick="resumeRun()">Pick it back up</button>
+      <button class="btn ghost" onclick="discardRun()">Discard</button>
+    </div>`);
+}
+
+function resumeRun() {
+  const p = pendingRun();
+  closeSheet();
+  if (!p) return;
+  const s = session(p.week, p.dayIdx);
+  R = { s, i: Math.min(p.i || 0, (s.moves ? s.moves.length : 1) - 1),
+        done: p.done || {}, startedAt: p.startedAt,
+        timer: null, running: false, rest: p.rest || null };
+
+  if (s.type === "cardio") {
+    const t = buildCardioTimer(s.cardio);
+    if (p.timer) {
+      t.at   = Math.min(p.timer.at || 0, t.q.length - 1);
+      t.left = Math.max(0, Math.min(p.timer.left || t.q[t.at].sec, t.q[t.at].sec));
+      t.over = !!p.timer.over;
+    }
+    t.endsAt = null;                 // resumed paused; the user presses Start
+    R.timer = t;
+  }
+  // A rest countdown that expired while the app was closed is just over.
+  if (R.rest && R.rest.endsAt <= Date.now()) R.rest = null;
+
+  $("#runner").classList.add("on");
+  document.body.style.overflow = "hidden";
+  sessTick = setInterval(runnerSecond, 1000);
+  keepAwake();
+  drawRunner();
+}
+
+function discardRun() { clearRun(); closeSheet(); }
+
+/* ── Storage diagnostics ─────────────────────────────────────────────────
+   Mostly here so "it forgot everything again" is answerable rather than a
+   mystery: it shows where the app is actually running from, whether the
+   browser has agreed to keep the data, and when it last wrote.       */
+
+async function storagePanel() {
+  let persisted = null, quota = null;
+  try {
+    if (navigator.storage && navigator.storage.persisted) persisted = await navigator.storage.persisted();
+    if (navigator.storage && navigator.storage.estimate) {
+      const est = await navigator.storage.estimate();
+      if (est && est.usage != null) quota = est;
+    }
+  } catch (e) {}
+
+  const stamp = Number(localStorage.getItem(STAMP) || 0);
+  const bak = localStorage.getItem(BAK);
+  let bakInfo = "none yet";
+  if (bak) {
+    try {
+      const b = parseState(bak);
+      bakInfo = `${b.workouts.length} sessions, ${b.weights.length} weigh-ins`;
+    } catch (e) { bakInfo = "present but unreadable"; }
+  }
+
+  const rows = [
+    ["Running from", location.origin + location.pathname],
+    ["Storage kept", persisted === null ? "unknown (browser won't say)"
+                    : persisted ? "yes — protected from eviction"
+                                : "NO — the browser may clear it"],
+    ["Last saved", stamp ? new Date(stamp).toLocaleString() : "never"],
+    ["Sessions", String(S.workouts.length)],
+    ["Weigh-ins", String(S.weights.length)],
+    ["Food days", String(Object.keys(S.food || {}).length)],
+    ["Backup holds", bakInfo],
+    ["Last exported", (() => {
+      const e = Number(localStorage.getItem(EXPORTED) || 0);
+      if (!e) return "never";
+      const days = Math.floor((Date.now() - e) / 86400000);
+      return days === 0 ? "today" : `${days} day${days === 1 ? "" : "s"} ago`;
+    })()],
+  ];
+  if (quota) rows.push(["Space used", `${(quota.usage/1024).toFixed(0)} KB of ${(quota.quota/1048576).toFixed(0)} MB`]);
+
+  openSheet(`
+    <div class="grab"></div>
+    <h3>Storage</h3>
+    ${storeNote ? `<p class="warn-note">${esc(storeNote)}</p>` : ""}
+    ${persisted === false ? `<p class="warn-note">This browser has not promised to keep
+       your data. Installing the app to your home screen and opening it regularly makes
+       eviction much less likely — and export a backup now and then regardless.</p>` : ""}
+    <table class="data" style="margin-top:0">
+      ${rows.map(r => `<tr><td>${esc(r[0])}</td><td class="num" style="text-align:right;word-break:break-all">${esc(r[1])}</td></tr>`).join("")}
+    </table>
+    <div class="btn-row" style="margin-top:18px">
+      <button class="btn ghost" onclick="exportData()">Export backup</button>
+      ${bak ? `<button class="btn ghost" onclick="restoreBackup()">Restore backup</button>` : ""}
+    </div>
+    <button class="btn ghost" style="margin-top:8px" onclick="closeSheet()">Close</button>`);
+}
+
+function restoreBackup() {
+  const bak = localStorage.getItem(BAK);
+  if (!bak) return;
+  let st;
+  try { st = parseState(bak); }
+  catch (e) { alert("The backup could not be read."); return; }
+  if (!confirm(`Replace what's on screen with the backup (${st.workouts.length} sessions)?`)) return;
+  S = st; save(); closeSheet(); render();
+}
+
 function restartPlan() {
   if (!confirm("Restart the 12-week plan from week 1? Your logged history stays.")) return;
   S.workouts.forEach(w => { delete w.planWeek; delete w.planDay; });
@@ -987,6 +1216,7 @@ function startRunner(week, dayIdx) {
 
 /* One place to tear everything down, so no interval outlives the session. */
 function endRunner() {
+  clearRun();
   stopTick();
   if (sessTick) { clearInterval(sessTick); sessTick = null; }
   if (holdT) { clearInterval(holdT.h); holdT = null; }
@@ -1179,6 +1409,7 @@ function drawRunner() {
   }
 
   $("#runBody").innerHTML = html;
+  saveRun();
 }
 
 /* A hold timer for planks — separate from the cardio queue. */
@@ -2551,6 +2782,9 @@ function exportData() {
   a.href = url; a.download = `groundwork-backup-${today()}.json`;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 2000);
+  // Exporting is the only thing that survives the browser clearing storage,
+  // so it's worth knowing how long it has been.
+  try { localStorage.setItem(EXPORTED, String(Date.now())); } catch (e) {}
 }
 
 function importData() {
@@ -2587,13 +2821,20 @@ if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
 // A screen wake lock is dropped whenever the page is hidden, so take it
 // again on the way back if a session is still running.
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState !== "visible" || !R) return;
+  if (document.visibilityState === "hidden") { save(); saveRun(); return; }
+  if (!R) return;
   keepAwake();
   // Reconcile straight away rather than waiting up to a second for the tick.
   if (R.timer && R.running) cardioSecond();
 });
 
+// pagehide is the one lifecycle event iOS reliably fires before it suspends
+// or discards the page. beforeunload is not dependable in a standalone PWA.
+window.addEventListener("pagehide", () => { save(); saveRun(); });
+
+askPersistence();
 render();
+offerResume();
 </script>
 </body>
 </html>
