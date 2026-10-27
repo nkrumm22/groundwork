@@ -171,6 +171,9 @@ h2 { font-size: 13px; font-weight: 600; letter-spacing: .04em; text-transform: u
 .ex-row { display: flex; align-items: center; gap: 10px; width: 100%;
           padding: 11px 0; font-size: 15px; text-align: left; }
 .ex-list .n { flex: 1; }
+.ex-list li.ex-sub { padding: 14px 0 4px; font-size: 12px; font-weight: 600; color: var(--muted);
+                     letter-spacing: .04em; text-transform: uppercase; }
+.ex-list li.ex-sub + li { border-top: 0; }
 .ex-list .r { color: var(--ink-2); font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .howdot { width: 20px; height: 20px; flex: none; border-radius: 50%;
           background: var(--series-soft); color: var(--series);
@@ -614,6 +617,22 @@ const DAY_A = {
       fig:  ["deadbug", "plank", "plank"],
       cue: "Brace like you're about to be poked in the stomach. Slow and controlled beats fast and sloppy.",
       sets: [2,3,3], reps: [8,20,40], hold: [false,true,true] },
+
+    // Finisher — five extra minutes of chest and core once the main work is done.
+    { name: ["Wide wall push-up", "Wide incline push-up", "Wide knee push-up"],
+      fig:  ["pushWall", "pushIncline", "pushKnee"], finisher: true,
+      cue: "Hands a thumb's length wider than your first set — it shifts the work onto your chest. Stop two reps before you can't do another.",
+      sets: [2,2,2], reps: [6,8,10] },
+    { name: ["Bird dog", "Bird dog", "Bird dog (3s hold)"],
+      fig:  ["birdDog", "birdDog", "birdDog"], finisher: true,
+      cue: "On hands and knees. Reach one arm forward and the opposite leg back, pause, return. Reps are per side.",
+      sets: [2,2,2], reps: [6,8,8] },
+    { name: ["Reverse crunch", "Reverse crunch", "Hollow hold"],
+      fig:  ["reverseCrunch", "reverseCrunch", "hollowHold"], finisher: true,
+      cue: ["Lie on your back, knees bent up at 90°. Curl your hips off the floor toward your ribs, then lower slowly — no swinging.",
+            "Lie on your back, knees bent up at 90°. Curl your hips off the floor toward your ribs, then lower slowly — no swinging.",
+            "Lower back pressed into the floor, shoulders and legs lifted, arms reaching for your feet. Bend your knees if your back arches."],
+      sets: [2,2,2], reps: [8,10,20], hold: [false,false,true] },
   ],
 };
 
@@ -688,9 +707,10 @@ function session(week, dayIdx) {
     type: "strength", week, dayIdx, phase: p, title: t.title, focus: t.focus,
     desc: PHASES[p].blurb,
     moves: t.moves.map(m => ({
-      name: m.name[p], cue: m.cue, fig: m.fig ? m.fig[p] : null,
+      name: m.name[p], cue: Array.isArray(m.cue) ? m.cue[p] : m.cue,
+      fig: m.fig ? m.fig[p] : null,
       sets: m.sets[p], reps: m.reps[p],
-      hold: m.hold ? m.hold[p] : false,
+      hold: m.hold ? m.hold[p] : false, finisher: !!m.finisher,
     })),
   };
 }
@@ -944,6 +964,7 @@ function render() {
 /* Shared by the Today card and the week sheet. Each row opens its demo. */
 function exListHTML(s, week, dayIdx) {
   return `<ul class="ex-list">` + s.moves.map((m, i) =>
+    (m.finisher && !s.moves[i-1].finisher ? `<li class="ex-sub">Finisher · chest &amp; core</li>` : "") +
     `<li><button class="ex-row" onclick="demoMove(${week},${dayIdx},${i})">
         <span class="n">${esc(m.name)}</span>
         <span class="r">${m.sets} × ${m.hold ? m.reps + "s" : m.reps}</span>
@@ -1334,7 +1355,7 @@ function drawRunner() {
   if (s.type === "strength") {
     const m = s.moves[R.i];
     const doneSets = R.done[R.i] || 0;
-    html += `<div class="run-step" style="margin-bottom:8px">Move ${R.i+1} of ${s.moves.length}</div>
+    html += `<div class="run-step" style="margin-bottom:8px">Move ${R.i+1} of ${s.moves.length}${m.finisher ? " · Finisher" : ""}</div>
       <div class="run-name">${esc(m.name)}</div>
       <p class="run-target">${m.sets} sets × ${m.hold ? m.reps + " seconds" : m.reps + " reps"}</p>
       <p class="run-cue">${esc(m.cue)}</p>
@@ -1782,6 +1803,30 @@ const FIG = {
     a: { hd:[20,50], sh:[30,56], hip:[58,70], kn:[74,80], an:[90,90], el:[30,78], wr:[16,82] },
     watch: ["One straight line from head to feet, feet stacked or slightly staggered.",
             "Lift your hips until the line is straight, then hold and breathe."],
+  },
+  birdDog: {
+    props: [{ t:"floor" }],
+    a: { hd:[76,62], sh:[66,68], hip:[38,68], kn:[38,90], an:[20,91], kn2:[43,90], an2:[25,91],
+         el:[66,80], wr:[66,92], el2:[71,80], wr2:[71,92] },
+    b: { hd:[76,62], sh:[66,68], hip:[38,68], kn:[38,90], an:[20,91], kn2:[16,67], an2:[-2,66],
+         el:[78,65], wr:[90,62], el2:[71,80], wr2:[71,92] },
+    watch: ["Back stays flat as a tabletop — imagine balancing a cup of water on it.",
+            "Reach long rather than high. If your hips tip sideways, shorten the reach."],
+  },
+  reverseCrunch: {
+    props: [{ t:"floor" }],
+    a: { hd:[18,84], sh:[28,84], hip:[54,86], kn:[64,66], an:[80,66], el:[40,90], wr:[52,91] },
+    b: { hd:[18,84], sh:[28,84], hip:[56,80], kn:[52,58], an:[68,50], el:[40,90], wr:[52,91] },
+    watch: ["The lift comes from curling your pelvis, not from swinging your legs.",
+            "Lower slowly until your hips just touch down, then go again."],
+  },
+  hollowHold: {
+    hold: true,
+    props: [{ t:"floor" }],
+    a: { hd:[20,77], sh:[30,82], hip:[54,89], kn:[75,85], an:[92,80], kn2:[75,86], an2:[92,81],
+         el:[40,78], wr:[52,76] },
+    watch: ["Lower back glued to the floor. The moment it lifts, bend your knees or raise your legs.",
+            "Chin slightly tucked — look toward your toes, not the ceiling."],
   },
 
   /* ── Pull ─────────────────────────────────────────────────────────── */

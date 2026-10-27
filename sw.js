@@ -3,7 +3,7 @@
    phone can reach the server), cache-first for icons and the manifest.
    Everything still works with no connection at all. */
 
-const V = "groundwork-v1";
+const V = "groundwork-v2";
 const SHELL = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", e => {
