@@ -789,6 +789,10 @@ function load() {
 
 let S = load();
 
+/* What this copy of the app last read or wrote. Lets the hide/close
+   handlers tell "I have unsaved changes" apart from "I'm just old". */
+let lastWritten = localStorage.getItem(KEY);
+
 function save() {
   try {
     const next = JSON.stringify(S);
@@ -810,10 +814,27 @@ function save() {
     if (prev && prev.length > 40 && prev !== next) localStorage.setItem(BAK, prev);
     localStorage.setItem(KEY, next);
     localStorage.setItem(STAMP, String(Date.now()));
+    lastWritten = next;
   } catch (e) {
     alert("Couldn't save - your device may be out of storage.");
   }
 }
+
+/* Every change already saves on the spot; this is only the safety net for
+   hiding or closing the app. It must not write unconditionally — a second
+   copy left open in another tab would put its stale record over whatever
+   was just logged in this one. */
+function saveIfChanged() {
+  if (JSON.stringify(S) !== lastWritten) save();
+}
+
+/* Another copy of the app saved. Adopt its record so ours isn't stale. */
+window.addEventListener("storage", e => {
+  if (e.key !== KEY || e.newValue == null) return;
+  try { S = parseState(e.newValue); } catch (_) { return; }
+  lastWritten = e.newValue;
+  if (!R) render();      // a running session redraws itself when it ends
+});
 
 /* Ask the browser to stop treating our storage as disposable. Without this
    iOS clears script-writable storage after about a week, which reads to the
@@ -2866,7 +2887,9 @@ if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
 // A screen wake lock is dropped whenever the page is hidden, so take it
 // again on the way back if a session is still running.
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "hidden") { save(); saveRun(); return; }
+  // Only the copy running a session may touch its record — saveRun() with no
+  // session clears it, which would wipe one in progress in another tab.
+  if (document.visibilityState === "hidden") { saveIfChanged(); if (R) saveRun(); return; }
   if (!R) return;
   keepAwake();
   // Reconcile straight away rather than waiting up to a second for the tick.
@@ -2875,7 +2898,7 @@ document.addEventListener("visibilitychange", () => {
 
 // pagehide is the one lifecycle event iOS reliably fires before it suspends
 // or discards the page. beforeunload is not dependable in a standalone PWA.
-window.addEventListener("pagehide", () => { save(); saveRun(); });
+window.addEventListener("pagehide", () => { saveIfChanged(); if (R) saveRun(); });
 
 askPersistence();
 render();
