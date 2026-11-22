@@ -233,6 +233,13 @@ h2 { font-size: 13px; font-weight: 600; letter-spacing: .04em; text-transform: u
 .fm-val { font-size: 15px; font-weight: 620; font-variant-numeric: tabular-nums; }
 .fm-val i { font-size: 12.5px; font-weight: 450; color: var(--muted); font-style: normal; }
 .fm-hint { font-size: 12.5px; color: var(--muted); line-height: 1.45; margin: 0; }
+.plate-row { display: flex; align-items: center; gap: 18px; }
+.plate { width: 96px; height: 96px; flex: none; }
+.plate-key { list-style: none; margin: 0; padding: 0; flex: 1; min-width: 0; }
+.plate-key li { display: flex; align-items: center; gap: 8px; font-size: 13.5px; padding: 4px 0; }
+.plate-key i { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.plate-key span { flex: 1; min-width: 0; color: var(--ink-2); }
+.plate-key b { font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
 
 .pips { display: flex; gap: 6px; margin: 13px 0 10px; }
 .pip { flex: 1; min-width: 0; height: 34px; border-radius: 8px;
@@ -2180,6 +2187,9 @@ function renderFood() {
   // Last seven days, so a bad day reads as one day rather than a verdict.
   html += `<h2>This week</h2><div class="card">${weekStripHTML()}</div>`;
 
+  html += `<h2>Build your plate</h2>${plateCardHTML()}`;
+  html += `<h2>Recipe ideas</h2>${recipeListHTML()}`;
+
   html += `<h2>Targets</h2><div class="card">
     <p class="card-meta" style="margin-bottom:14px">
       Sensible defaults, not medical advice. Change them to whatever you'll actually hit.</p>
@@ -2250,6 +2260,183 @@ function weekStripHTML() {
   return `<div class="wstrip">${cells}</div>
     <p class="card-meta" style="margin-top:12px">
       Bar height is how many of the four you hit that day.</p>`;
+}
+
+/* ── Portions ───────────────────────────────────────────────────────────
+   Hand-sized rather than weighed: your hand scales with you and is always
+   there. Sized for two meals a day, so the protein is doubled up.      */
+
+const PLATE = [
+  { k:"protein", label:"Protein", amt:"2 palms", col:"var(--series)",
+    note:"Fill this first. With only two meals a day, each one has to carry double." },
+  { k:"veg", label:"Vegetables", amt:"1–2 fists", col:"var(--seq-1)",
+    note:"Half the plate is the goal. A quarter is fine to start — roasted or hidden in the sauce counts." },
+  { k:"carb", label:"Rice, pasta, bread, potato", amt:"1 cupped hand", col:"var(--muted)",
+    note:"Whatever space is left. This is the part that quietly grows when portions get big." },
+  { k:"fat", label:"Oil, butter, cheese", amt:"1 thumb", col:"var(--axis)",
+    note:"Measure the cooking oil — a free pour is easily 3 tablespoons, about 360 calories." },
+];
+
+const PORTION_TIPS = [
+  "Plate up at the stove, not at the table. Seconds you have to walk for are seconds you think about.",
+  "Cooking for later? Box the leftovers before you sit down. What's in the fridge isn't on your plate.",
+  "Eat the protein first, then the veg. By the time you reach the carbs you'll want fewer of them.",
+  "Wait 20 minutes before deciding on seconds — that's how long fullness takes to register.",
+  "Drinks with a meal: water or zero-sugar. A regular soda is a third of a meal on its own.",
+];
+
+function plateSVG() {
+  // Half veg on the left, protein and carbs a quarter each on the right.
+  return `<svg viewBox="0 0 100 100" class="plate" aria-hidden="true">
+    <circle cx="50" cy="50" r="48" fill="var(--surface)" stroke="var(--border)" stroke-width="2"/>
+    <g stroke="var(--surface)" stroke-width="2.5" stroke-linejoin="round">
+      <path d="M50 10 A40 40 0 0 0 50 90 Z" fill="var(--seq-1)"/>
+      <path d="M50 50 L50 10 A40 40 0 0 1 90 50 Z" fill="var(--series)"/>
+      <path d="M50 50 L90 50 A40 40 0 0 1 50 90 Z" fill="var(--muted)"/>
+    </g>
+  </svg>`;
+}
+
+function plateCardHTML() {
+  return `<div class="card">
+    <div class="plate-row">
+      ${plateSVG()}
+      <ul class="plate-key">${PLATE.map(p => `
+        <li><i style="background:${p.col}"></i><span>${esc(p.label)}</span><b>${esc(p.amt)}</b></li>`).join("")}
+      </ul>
+    </div>
+    <p class="card-meta" style="margin:14px 0 12px">Per meal, measured with your own hand.</p>
+    <button class="btn soft sm" onclick="showPortionGuide()">How to keep portions in check</button>
+  </div>`;
+}
+
+function showPortionGuide() {
+  openSheet(`
+    <div class="grab"></div>
+    <h3>Building your plate</h3>
+    <p class="demo-h">How much, per meal</p>
+    <ul class="demo-list">${PLATE.map(p =>
+      `<li><b>${esc(p.label)} — ${esc(p.amt)}.</b> ${esc(p.note)}</li>`).join("")}</ul>
+    <p class="demo-h">Habits that do the work for you</p>
+    <ul class="demo-list">${PORTION_TIPS.map(t => `<li>${esc(t)}</li>`).join("")}</ul>
+    <button class="btn ghost" onclick="closeSheet()">Got it</button>
+  `);
+}
+
+/* ── Recipes ────────────────────────────────────────────────────────────
+   High-protein dinners for someone who likes cooking but not vegetables:
+   the veg is roasted until sweet or blended out of sight, and there is no
+   broccoli or cauliflower anywhere. `protein` and `veg` are per serving,
+   in the same units as the trackers, so "I cooked this" can log them.  */
+
+const RECIPES = [
+  { name:"Turkey chili with hidden veg", time:"40 min", serves:4, protein:2, veg:2,
+    hide:"Carrot and zucchini are grated fine and cook down into the sauce.",
+    ing:["1 lb (450 g) lean ground turkey","1 can kidney or black beans, drained","1 can crushed tomatoes",
+         "1 carrot and 1 zucchini, finely grated","1 onion and 1 bell pepper, diced",
+         "2 tbsp chili powder, 1 tsp cumin, salt","1 tbsp oil"],
+    steps:["Brown the turkey with the onion and pepper in the oil.",
+           "Stir in the grated carrot and zucchini and cook 5 minutes until they disappear.",
+           "Add spices, tomatoes and beans. Simmer 20 minutes.",
+           "Freezes well — portion leftovers into containers before serving."] },
+  { name:"Sheet-pan chicken fajitas", time:"30 min", serves:3, protein:2, veg:1,
+    hide:"Peppers and onions roasted hot until sweet and charred — nothing like raw.",
+    ing:["1.5 lb (680 g) chicken breast or thighs, sliced","3 bell peppers, sliced","1 large onion, sliced",
+         "1 tbsp oil","2 tsp fajita or taco seasoning","Tortillas, salsa, Greek yogurt instead of sour cream"],
+    steps:["Heat the oven to 425°F / 220°C.",
+           "Toss everything with the oil and seasoning on one tray, spread out so it roasts, not steams.",
+           "Roast 20–25 minutes until the chicken is cooked and the edges char.",
+           "Two tortillas per plate, loaded with chicken first."] },
+  { name:"Beef & mushroom tacos", time:"25 min", serves:4, protein:2, veg:1,
+    hide:"Chopped mushrooms cook into the beef and take on its flavor — half the fat, same taste.",
+    ing:["1 lb (450 g) lean ground beef","8 oz (225 g) mushrooms, chopped very fine","1 onion, diced",
+         "Taco seasoning","Tortillas, cheese, salsa, lettuce"],
+    steps:["Pulse the mushrooms in a food processor, or chop until they look like mince.",
+           "Brown the beef and onion, then add the mushrooms and cook until dry.",
+           "Add seasoning and a splash of water, simmer 5 minutes.",
+           "A thumb of cheese per plate, not a handful."] },
+  { name:"Creamy red-pepper pasta with chicken", time:"30 min", serves:4, protein:2, veg:2,
+    hide:"Roasted peppers and spinach are blended into the sauce — it just tastes creamy.",
+    ing:["1 lb (450 g) chicken breast, diced","1 jar (12 oz) roasted red peppers, drained","2 handfuls spinach",
+         "2 garlic cloves","½ cup cottage cheese or Greek yogurt","8 oz (225 g) pasta","1 tbsp oil, salt, chili flakes"],
+    steps:["Cook the pasta. Brown the chicken in the oil.",
+           "Blend the peppers, spinach, garlic and cottage cheese until smooth.",
+           "Warm the sauce with the chicken, toss in the pasta, loosen with pasta water.",
+           "One cupped hand of pasta per plate, plenty of chicken and sauce."] },
+  { name:"Honey-garlic salmon & crispy carrots", time:"25 min", serves:2, protein:2, veg:1,
+    hide:"Carrots roasted until caramelized taste closer to fries than vegetables.",
+    ing:["2 salmon fillets","4 carrots, cut into sticks","1 tbsp honey, 1 tbsp soy sauce, 2 garlic cloves",
+         "1 tbsp oil","Rice to serve"],
+    steps:["Heat the oven to 425°F / 220°C. Roast the carrots in the oil for 10 minutes.",
+           "Mix honey, soy and garlic. Add the salmon to the tray and brush it on.",
+           "Roast another 12 minutes until the salmon flakes.",
+           "Serve with a cupped hand of rice."] },
+  { name:"Teriyaki chicken rice bowl", time:"25 min", serves:3, protein:2, veg:1,
+    hide:"Peas, corn and edamame — the sweet, easy end of the vegetable range.",
+    ing:["1.5 lb (680 g) chicken thighs, diced","1 cup frozen peas, corn or edamame","⅓ cup teriyaki sauce",
+         "1 tbsp oil","Rice, sesame seeds, sliced green onion"],
+    steps:["Brown the chicken in the oil until cooked through.",
+           "Add the frozen veg and the sauce, simmer until sticky.",
+           "Build the bowl: chicken first, then veg, rice in the space left."] },
+  { name:"Zucchini turkey meatballs", time:"35 min", serves:4, protein:2, veg:1,
+    hide:"Grated zucchini keeps them juicy and vanishes completely.",
+    ing:["1 lb (450 g) ground turkey","1 zucchini, grated and squeezed dry","1 egg","⅓ cup breadcrumbs",
+         "¼ cup parmesan, garlic, Italian seasoning","1 jar marinara","Pasta or crusty bread"],
+    steps:["Heat the oven to 400°F / 200°C.",
+           "Mix everything except the marinara, roll into 16 balls.",
+           "Bake 18 minutes, then simmer in the marinara for 5.",
+           "Four meatballs a serving."] },
+  { name:"Shrimp egg fried rice", time:"15 min", serves:2, protein:2, veg:1,
+    hide:"Peas and carrots in small pieces, coated in everything else.",
+    ing:["8 oz (225 g) shrimp","3 eggs","2 cups cooked rice, ideally a day old","1 cup frozen peas and carrots",
+         "2 tbsp soy sauce","1 tbsp oil","Green onion"],
+    steps:["Scramble the eggs in half the oil, set aside.",
+           "Cook the shrimp in the rest, then add the rice and veg on high heat.",
+           "Stir in soy sauce and the eggs.",
+           "Doubles easily — the best use of leftover rice there is."] },
+];
+
+function recipeListHTML() {
+  return `<div class="card">
+    <p class="card-meta" style="margin-bottom:6px">
+      High-protein dinners. The veg is roasted or hidden — no broccoli, no cauliflower.</p>
+    <ul class="ex-list" style="margin:0">${RECIPES.map((r, i) => `
+      <li><button class="ex-row" onclick="openRecipe(${i})">
+        <span class="n">${esc(r.name)}</span>
+        <span class="r">${esc(r.time)}</span>
+      </button></li>`).join("")}
+    </ul>
+  </div>`;
+}
+
+function openRecipe(i) {
+  const r = RECIPES[i];
+  openSheet(`
+    <div class="grab"></div>
+    <h3>${esc(r.name)}</h3>
+    <p class="card-meta" style="margin:-8px 0 14px">${esc(r.time)} · serves ${r.serves} ·
+      ${r.protein} protein + ${r.veg} veg per serving</p>
+    <p class="demo-cue">${esc(r.hide)}</p>
+    <p class="demo-h">You'll need</p>
+    <ul class="demo-list">${r.ing.map(x => `<li>${esc(x)}</li>`).join("")}</ul>
+    <p class="demo-h">Method</p>
+    <ol class="demo-list">${r.steps.map(x => `<li>${esc(x)}</li>`).join("")}</ol>
+    <div class="btn-row">
+      <button class="btn" onclick="cookedRecipe(${i})">I cooked this</button>
+      <button class="btn ghost" onclick="closeSheet()">Close</button>
+    </div>
+  `);
+}
+
+/* Logs one serving against today's trackers. */
+function cookedRecipe(i) {
+  const r = RECIPES[i], d = today();
+  const day = S.food[d] = S.food[d] || {};
+  day.cooked  = (day.cooked  || 0) + 1;
+  day.protein = (day.protein || 0) + r.protein;
+  day.veg     = (day.veg     || 0) + r.veg;
+  if (navigator.vibrate) navigator.vibrate(8);
+  save(); closeSheet(); renderFood();
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
